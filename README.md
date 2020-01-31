@@ -26,7 +26,7 @@ NeoFuse can be installed through the following four steps.
 [Instructions for Singularity installation](https://sylabs.io/docs/)
 
 ### 1.2. Download the NeoFuse script
-The script is freely available [here](https://icbi.i-med.ac.at/software/NeoFuse/NeoFuse.shtml).
+The script is freely available [here](https://icbi.i-med.ac.at/software/NeoFuse/downloads/NeoFuse-v1.1.1.zip).
 
 Unzip the archive and add it to PATH:
 
