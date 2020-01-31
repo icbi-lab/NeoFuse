@@ -1,0 +1,365 @@
+#! /bin/bash
+
+realpath2 ()
+{
+    relpath=$1
+    cpath=`pwd`
+    reldir=`dirname $relpath`
+    relfile=`basename $relpath`
+    cd $reldir
+    abspath=`pwd`
+    abspath=$abspath"/"$relfile
+    cd $cpath
+    echo $abspath
+}
+
+OUTDIR="./"
+declare -i PEPMAX
+declare -i PEPMIN
+PEPMIN=8
+declare -i CORES
+CORES=1
+declare -i RAMLIMIT
+RAMLIMIT=0
+THRESHOLD=""
+RANK=""
+CONF="L"
+NETMHCPAN="false"
+BUILD="false"
+BUILDREF="false"
+VERSION="GRCh38"
+
+while getopts ":1::2::d::i::o::m::M::n::t::T::c::s::g::a::l::-::N::BRV::h" opt;
+do
+	case $opt in
+	1)	READ1="$OPTARG";;
+	2)	READ2="$OPTARG";;
+	d)	ID="$OPTARG";;
+	i)	IN="$OPTARG";;
+	o)  OUTDIR="$OPTARG";;
+	m)	PEPMIN="$OPTARG";;
+	M)	PEPMAX="$OPTARG";;
+	n)	CORES="$OPTARG";;
+	t)	THRESHOLD="$OPTARG";;
+	T)	RANK="$OPTARG";;
+	c)	CONF="$OPTARG";;
+	s)	STARINDEX="$OPTARG";;
+	g)	GENOMEDIR="$OPTARG";;
+	a)	ANNOTATION="$OPTARG";;
+	N)	NETMHCPAN="$OPTARG";;
+	l)	RAMLIMIT="$OPTARG";;
+	-)	IMAGE="$OPTARG";;
+	B)	BUILD="true";;
+	R)	BUILDREF="true";;
+	V)	VERSION="$OPTARG";;
+	h)	HELP="true";;
+	esac
+done
+if [ "$BUILD" == "false" ]; then
+	if [ "$READ1" == "" ] && [ "$IN" == "" ] && [ "$BUILDREF" == "false" ] || [ "$HELP" == "true" ]; then
+		echo "Usage: NeoFuse <arguments> [options]
+
+	<Arguments>
+
+	-1: Path to read 1 FASTQ file (mandatory only for single sample analysis)
+	-2: Path to read 2 FASTQ fie (optional for single-end reads)
+	-i: Path to TSV file (mandatory only for multiple sample analysis)
+	-s: Path to STAR index directory
+	-g: Path to reference genome FASTA file 
+	-a: Path to annotation GTF file
+	-o: Output directory (default: "./")
+	-d: Run ID (default: input filename)
+
+	-B: Build singularity/docker image
+	-R: Build indexes
+
+	[Options]
+
+	-m: Minimum peptide length (8, 9, 10, or 11; default: 8)
+	-M: Maximum peptide length (8, 9, 10, or 11; default: 8)
+	-n: Number of cores (default: 1)
+	-t: IC50 binding affinity threshold (default: 500)
+	-T: Percentile rank threshold (default: Inf)
+	-c: Mimimum confidence score (H, M or L; default: L)
+
+	--singularity: NeoFuse will use the Singularity image
+	--docker: NeoFuse will use the Docker image
+	
+	For more information please refer to https://icbi.i-med.ac.at/software/NeoFuse/
+	"
+		exit 0
+	else
+		:
+	fi
+	if [ "$BUILDREF" == "true" ]; then
+		SOURCE="${BASH_SOURCE[0]}"
+		while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+		DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+		SOURCE="$(readlink "$SOURCE")"
+		[[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE is a relative symlink, resolve it relative to the path where the symlink file is located
+		done
+		DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+		OUTDIR=`realpath2 $OUTDIR`
+		mkdir -p $OUTDIR
+		if [ "$IMAGE" == "docker" ]; then
+			DMOUNT="-v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/})"
+			OUTDIR="/mnt/out/$(echo ${OUTDIR##*/})"
+			docker run $DMOUNT icbi/neofuse NeoFuse-download -o $OUTDIR -t $CORES -v $VERSION
+			exit 0
+		elif [ "$IMAGE" == "singularity" ]; then
+			SMOUNT="-B $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/})"
+			OUTDIR="/mnt/out/$(echo ${OUTDIR##*/})"
+			singularity exec $SMOUNT $DIR"/NeoFuse.sif" NeoFuse-download -o $OUTDIR -t $CORES -v $VERSION
+			exit 0
+		else
+			echo "You must specify '--docker' or '--singularity'"
+			echo "Exiting ..."
+			exit 1
+		fi
+	else
+		:
+	fi
+	if [ "$THRESHOLD" == "" ] && [ "$RANK" == "" ]; then
+		THRESHOLD=500
+		RANK=inf
+	elif [ "$THRESHOLD" != "" ] && [ "$RANK" == "" ]; then
+		RANK=inf
+	elif [ "$THRESHOLD" == "" ] && [ "$RANK" != "" ]; then
+		THRESHOLD=inf
+	fi
+	if [ "$NETMHCPAN" == "false" ]; then
+		:
+	else
+		NETMHCPAN=`realpath2 $NETMHCPAN`
+		if [ ! -d "$NETMHCPAN" ]; then
+			echo "No local netMHCpan instalation found"
+			echo "Install netMHCpan and try again"
+			echo "Exiting ..."
+			exit 1
+		else
+			:
+		fi
+	fi
+
+	if test $ID; then
+		:
+	else
+		ID=$(echo ${READ1##*/} | sed s/_.*fastq.*//)
+	fi
+
+	if [ "$PEPMAX" == "" ]; then
+		PEPMAX=$PEPMIN
+	fi
+
+	if [ "$IN" != "" ] && [ "$READ1" != "" ]; then
+		echo " You may specify as input a TSV file OR FASTQ file(s), but not both "
+		echo "Exiting ..."
+		exit 1
+	fi
+
+	if [ "$IN" != "" ] && [ "$READ2" != "" ]; then
+		echo " You may specify as input a TSV file OR FASTQ file(s), but not both "
+		echo "Exiting ..."
+		exit 1
+	fi
+
+	if [ "$STARINDEX" == "" ]; then
+		echo "You must specify a STAR index directory"
+		echo "Exiting ..."
+		exit 1
+	elif [ "$GENOMEDIR" == "" ]; then
+		echo "You must specify a FASTA reference file"
+		echo "Exiting ..."
+		exit 1
+	elif [ "$ANNOTATION" == "" ]; then
+		echo "You must specify an annotation GTF file"
+		echo "Exiting ..."
+		exit 1
+	fi
+
+	# Convert relative to absolute paths
+	if [ "$IN" != "" ]; then
+		IN=`realpath2 $IN`
+	fi
+
+	if [ "$READ1" != "" ]; then
+		READ1=`realpath2 $READ1`
+	fi
+
+	if [ "$READ2" != "" ]; then
+		READ2=`realpath2 $READ2`
+	fi
+
+	mkdir -p $OUTDIR
+	OUTDIR=`realpath2 $OUTDIR`
+	STARINDEX=`realpath2 $STARINDEX`
+	GENOMEDIR=`realpath2 $GENOMEDIR`
+	ANNOTATION=`realpath2 $ANNOTATION`
+
+	# Get the source dir
+	SOURCE="${BASH_SOURCE[0]}"
+	while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+		DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+		SOURCE="$(readlink "$SOURCE")"
+		[[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE is a relative symlink, resolve it relative to the path where the symlink file is located
+	done
+	DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+	
+	if [ "$IMAGE" == "docker" ] || [ "$IMAGE" == "singularity" ] || [ "$IMAGE" == "" ]; then
+		:
+	else
+		echo "Invalid parameter, accepted values are: [--singularity], [--docker], []"
+		echo "Exiting ..."
+		exit 1
+	fi
+
+	if [ "$IMAGE" == "docker" ] || [ "$IMAGE" == "singularity" ] ; then
+		# If user calls for Docker/singularity:
+		## Change realpaths to mount points
+		if [ "$IN" != "" ]; then
+			cat $IN > $(echo $IN | sed s/.tsv//)_temp.tsv
+			IN=$(echo $IN | sed s/.tsv//)_temp.tsv
+			INDIR=$(awk '{if(NR==2){ print $2; }}' < "$IN")
+			INDIR=$(dirname "${INDIR}")
+			sed -i "s%$INDIR%/mnt/data%g" $IN
+			INDIR=`realpath2 $INDIR`
+			SMOUNT="-B $INDIR:/mnt/data,$IN:/mnt/$(echo ${IN##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
+			DMOUNT="-v $INDIR:/mnt/data -v $IN:/mnt/$(echo ${IN##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
+			if [ "$NETMHCPAN" == "false" ]; then
+				:
+			else
+				SMOUNT=$SMOUNT",$NETMHCPAN:/usr/local/bin/source/$(echo ${NETMHCPAN##*/})"
+				DMOUNT=$DMOUNT" -v $NETMHCPAN:/usr/local/bin/source/$(echo ${NETMHCPAN##*/})"
+			fi
+			IN="/mnt/$(echo ${IN##*/})"
+		fi
+
+		if [ "$READ1" != "" ]; then
+			SMOUNT="-B $READ1:/mnt/data/$(echo ${READ1##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
+			DMOUNT="-v $READ1:/mnt/data/$(echo ${READ1##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
+			if [ "$NETMHCPAN" == "false" ]; then
+				:	
+			else
+				SMOUNT=$SMOUNT",$NETMHCPAN:/usr/local/bin/source/$(echo ${NETMHCPAN##*/})"
+				DMOUNT=$DMOUNT" -v $NETMHCPAN:/usr/local/bin/source/$(echo ${NETMHCPAN##*/})"
+			fi
+		fi
+
+		if [ "$READ2" != "" ]; then
+			SMOUNT=$SMOUNT",$READ2:/mnt/data/$(echo ${READ2##*/})"
+			DMOUNT=$DMOUNT" -v $READ2:/mnt/data/$(echo ${READ2##*/})"
+			READ2="/mnt/data/$(echo ${READ2##*/})"	
+		fi
+		mkdir -p $OUTDIR
+		REALOUT=$OUTDIR
+		OUTDIR="/mnt/out/$(echo ${OUTDIR##*/})"
+		STARINDEX="/mnt/genome/$(echo ${STARINDEX##*/})"
+		GENOMEDIR="/mnt/genome/$(echo ${GENOMEDIR##*/})"
+		ANNOTATION="/mnt/genome/$(echo ${ANNOTATION##*/})"
+		READ1="/mnt/data/$(echo ${READ1##*/})"
+		if [ "$NETMHCPAN" == "false" ]; then
+			:
+		else
+			NETMHCPAN="/usr/local/bin/source/$(echo ${NETMHCPAN##*/})"
+		fi
+
+		## Check for Docker/singularity installation and launch
+		if [ "$IMAGE" == "docker" ]; then
+			if [ -x "$(command -v docker)" ]; then
+				if [ "$IN" != "" ]; then
+					docker run -rm $DMOUNT icbi/neofuse NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+				elif [ "$READ1" != "" ]; then
+					if [ "$READ2" == "" ]; then
+						docker run -rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+					else
+						docker run -rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+					fi
+				else
+					echo "Invalid arguments"
+					echo "Please check your input files"
+					echo "Exiting ..."
+					rm $IN
+					exit 1
+				fi
+			else
+				echo "No Docker instalation found on the machine"
+				echo "Install Docker and try again"
+				echo "Exiting ..."
+				rm $IN
+				exit 1
+			fi
+		elif [ "$IMAGE" == "singularity" ]; then
+			if [ -x "$(command -v singularity)" ]; then
+				if [ ! -e $DIR/NeoFuse.sif ]; then
+					echo "No NeoFuse singularity image found locally"
+					echo 'Try running: $ NeoFuse -B --singularity'
+					exit 1
+				fi
+				if [ "$IN" != "" ]; then
+					singularity exec $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+				elif [ "$READ1" != "" ]; then
+					if [ "$READ2" == "" ]; then
+						singularity exec $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+					else
+						singularity exec $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -T $RANK -t $THRESHOLD -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+					fi
+				else
+					echo "Invalid arguments"
+					echo "Please check your input files"
+					echo "Exiting ..."
+					rm $IN
+					exit 1
+				fi
+			else
+				echo "No singularity instalation found on the machine"
+				echo "Install singularity and try again"
+				echo "Exiting ..."
+				rm $IN
+				exit 1
+			fi
+		elif [ "$IMAGE" == "" ]; then
+			:
+		else
+			echo "Invalid paramater: accepted arguments are --docker or --singularity"
+			echo "Exiting ..."
+			rm $IN
+			exit 1
+		fi
+	else
+		# Check for multiple or single sample(s) - call the appropriate script
+		# if [ "$IN" != "" ]; then
+		# 	bash $DIR"/source/"NeoFuse_multi.sh -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN
+		# elif [ "$READ1" != "" ]; then
+		# 	bash $DIR"/source/"NeoFuse_single.sh -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN
+		# else
+		# 	echo "Invalid arguments"
+		# 	echo "Please check your input files"
+		# 	echo "Exiting ..."
+		# 	exit 1
+		# fi
+		echo "Missing argument: '--docker' or '--singularity'"
+		echo "Exiting ..."
+		exit 1
+	fi
+elif [ "$BUILD" == "true" ]; then
+	# Get the source dir
+	SOURCE="${BASH_SOURCE[0]}"
+	while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+		DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+		SOURCE="$(readlink "$SOURCE")"
+		[[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE is a relative symlink, resolve it relative to the path where the symlink file is located
+	done
+	DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+	
+	if [ "$IMAGE" == "docker" ]; then
+		echo "Pulling NeoFuse Docker image from icbi repository"
+		docker pull icbi/neofuse
+	elif [ "$IMAGE" == "singularity" ]; then
+		echo "Building NeoFuse Singularity image"
+		singularity build $DIR"/NeoFuse.sif" docker://icbi/neofuse
+	else
+		echo "You must specify '--docker' or '--singularity'"
+		echo "Exiting ..."
+		exit 1
+	fi
+fi
