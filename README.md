@@ -104,6 +104,8 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 
 **[Options]**
 
+**-d:** Run ID (the name of the output files)
+
 **-m:** Minimum peptide length (values: 8, 9, 10, or 11; default: 8)
 
 **-M:** Maximum peptide length (values: 8, 9, 10, or 11; default: 8) *
