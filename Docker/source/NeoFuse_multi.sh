@@ -3,6 +3,7 @@
 BLACKLIST=/usr/local/bin/genomes/blacklist_hg38_GRCh38_2018-11-04.tsv.gz
 OPTIREF=/usr/local/bin/OptiType-1.3.2/data/hla_reference_rna.fasta
 Optitype=/usr/local/bin/OptiType-1.3.2/OptiTypePipeline.py
+
 OUTDIR="./"
 declare -i PEPMAX
 declare -i PEPMIN
@@ -58,6 +59,12 @@ do
 done < $IN
 
 # process args
+
+if test -z "$REALOUT"
+then
+	$REALOUT=$OUTDIR
+fi
+
 if test -z "$IN" 
 then
 	echo "usage: NeoFuse_multi -i <input> -o [output] -m [peptide min length] -M [peptide Max length] -n [cores] -c [confidence level] -t [affinity threshold] -s <STAR index> -g <FASTA file> -a <GTF file>"
@@ -219,20 +226,25 @@ do
 		else
 			:
 		fi
-
 		# RazerS3 + Optitype
 		## RazerS
 		echo " RazerS3 Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
-		razers3 --percent-identity 90 --max-hits 1 --distance-range 0 -tc $RAZERTHREADS --output $TEMPDIROPTI$FILE"_1.sam" $OPTIREF $READ1 > $LOGSDIR$FILE.razer1.log 2>&1 &
-		razers3 --percent-identity 90 --max-hits 1 --distance-range 0 -tc $RAZERTHREADS --output $TEMPDIROPTI$FILE"_2.sam" $OPTIREF $READ2 > $LOGSDIR$FILE.razer2.log 2>&1
+		razers3 --percent-identity 95 --max-hits 1 --distance-range 0 -tc $RAZERTHREADS --output $TEMPDIROPTI$FILE"_1.bam" $OPTIREF $READ1 > $LOGSDIR$FILE.razer1.log 2>&1 &
+		razers3 --percent-identity 95 --max-hits 1 --distance-range 0 -tc $RAZERTHREADS --output $TEMPDIROPTI$FILE"_2.bam" $OPTIREF $READ2 > $LOGSDIR$FILE.razer2.log 2>&1
 		wait
-		cat $TEMPDIROPTI$FILE"_1.sam" | grep -v ^@ | awk '{print "@"$1"\n"$10"\n+\n"$11}' > $TEMPDIROPTI$FILE"_1_HLA.fq"
-		cat $TEMPDIROPTI$FILE"_2.sam" | grep -v ^@ | awk '{print "@"$1"\n"$10"\n+\n"$11}' > $TEMPDIROPTI$FILE"_2_HLA.fq"
+		if [ `echo $?` != 0 ]; then
+			echo "An error occured during RazerS3 run, check $REALOUT/$FILE/LOGS/$FILE.razer{1,2}.log for more details"
+		else
+			:
+		fi
+		samtools bam2fq -@ $CORES $TEMPDIROPTI$FILE"_1.bam" > $TEMPDIROPTI$FILE"_1_HLA.fq"
+		samtools bam2fq -@ $CORES $TEMPDIROPTI$FILE"_2.bam" > $TEMPDIROPTI$FILE"_2_HLA.fq"
+		
 		## Optitype
 		echo " OptiType Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
 		python $Optitype -i $TEMPDIROPTI$FILE"_1_HLA.fq" $TEMPDIROPTI$FILE"_2_HLA.fq" \
 			--rna -v -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
-				
+		# python $Optitype -i $TEMPDIROPTI$FILE"_mapped_1.bam" $TEMPDIROPTI$FILE"_mapped_2.bam" -e 1 -b 0.009 -v -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
 		if [ `echo $?` != 0 ]; then
 			echo "An error occured during OptiType run, check $REALOUT/$FILE/LOGS/$FILE.optitype.log for more details"
 			exit 1
@@ -309,13 +321,19 @@ do
 		fi
 		# RazerS3 + OptiType
 		echo " RazerS3 Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
-		razers3 --percent-identity 90 --max-hits 1 --distance-range 0 -tc $CORES --output $TEMPDIROPTI$FILE"_1.sam" $OPTIREF $READ1
-		cat $TEMPDIROPTI$FILE"_1.sam" | grep -v ^@ | awk '{print "@"$1"\n"$10"\n+\n"$11}' > $TEMPDIROPTI$FILE"_1_HLA.fq"
+		razers3 --percent-identity 95 --max-hits 1 --distance-range 0 -tc $CORES --output $TEMPDIROPTI$FILE"_1.bam" $OPTIREF $READ1 > $LOGSDIR$FILE.razer.log 2>&1
+		if [ `echo $?` != 0 ]; then
+			echo "An error occured during RazerS3 run, check $REALOUT/$FILE/LOGS/$FILE.razer.log for more details"
+		else
+			:
+		fi
+		samtools bam2fq -@ $CORES $TEMPDIROPTI$FILE"_1.bam" > $TEMPDIROPTI$FILE"_1_HLA.fq"
+		
 		## Optitype
 		echo " OptiType Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
 		python $Optitype -i $TEMPDIROPTI$FILE"_1_HLA.fq" \
 			--rna -v -o $TEMPDIROPTI > $OUTDIROPTI$FILE.optitype.log 2>&1
-		
+		# python $Optitype -i $TEMPDIROPTI$FILE"_mapped_1.bam" -e 1 -b 0.009 --rna-o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
 		if [ `echo $?` != 0 ]; then
 			echo "An error occured during OptiType run, check $REALOUT/$FILE/LOGS/$FILE.optitype.log for more details"
 			exit 1
