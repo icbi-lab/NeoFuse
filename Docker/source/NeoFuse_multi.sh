@@ -62,7 +62,7 @@ done < $IN
 
 if test -z "$REALOUT"
 then
-	$REALOUT=$OUTDIR
+	REALOUT=$OUTDIR
 fi
 
 if test -z "$IN" 
