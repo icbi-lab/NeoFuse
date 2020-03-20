@@ -3,7 +3,6 @@
 BLACKLIST=/usr/local/bin/genomes/blacklist_hg38_GRCh38_2018-11-04.tsv.gz
 OPTIREF=/usr/local/bin/OptiType-1.3.2/data/hla_reference_rna.fasta
 Optitype=/usr/local/bin/OptiType-1.3.2/OptiTypePipeline.py
-
 OUTDIR=$PWD
 declare -i PEPMAX
 declare -i PEPMIN
@@ -45,7 +44,6 @@ if [ ! -d "~/.local/share/mhcflurry/4/1.2.0/models_class1/" ]; then
 fi
 
 # process args
-
 if test -z "$REALOUT"
 then
 	REALOUT=$OUTDIR
@@ -207,6 +205,9 @@ if test -f "$READ2"; then
 	else
 		:
 	fi
+
+	samtools index ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam
+
 	# RazerS3 + Optitype
 	## RazerS
 	echo " RazerS3 Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
@@ -299,6 +300,9 @@ else
 	else
 		:
 	fi
+
+	samtools index ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam
+
 	# RazerS3 + OptiType
 	echo " RazerS3 Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
 	razers3 --percent-identity 95 --max-hits 1 --distance-range 0 -tc $CORES --output $TEMPDIROPTI$FILE"_1.bam" $OPTIREF $READ1 > $LOGSDIR$FILE.razer.log 2>&1

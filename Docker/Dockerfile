@@ -44,7 +44,8 @@ RUN apt-get update -y && apt-get install -y \
 	coreutils \
 	git-lfs \
 	tcsh \
-	gawk
+	gawk \
+	procps
 
 
 # Set working directory
