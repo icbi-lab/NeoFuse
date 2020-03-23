@@ -270,9 +270,9 @@ if [ "$BUILD" == "false" ]; then
 					docker run -rm $DMOUNT icbi/neofuse NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
 				elif [ "$READ1" != "" ]; then
 					if [ "$READ2" == "" ]; then
-						docker run -rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
 					else
-						docker run -rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
 					fi
 				else
 					echo "Invalid arguments"
