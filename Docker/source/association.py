@@ -61,9 +61,9 @@ def tmp_out_pep(xenoInFile, tmpOutFile1, tmpOutFile2, outDir, fGenes, peptides, 
 			else:
 				gene_file.append(fGene[i]+"#"+out+"#"+ftype[i]+"#"+confidence[i]+"#"+stopCod[i]) #get the lines for the associations file
 				if counter <= cores:
-					out_file.write('''mhcflurry-predict --alleles %s --peptides %s --out %s &\n''' % (hla, peptides[i], out))
+					out_file.write('''mhcflurry-predict --alleles %s --peptides %s --out %s --models /home/neofuse/.local/share/mhcflurry/4/1.4.0/models_class1/models &\n''' % (hla, peptides[i], out))
 				else:
-					out_file.write('''mhcflurry-predict --alleles %s --peptides %s --out %s &\n''' % (hla, peptides[i], out))
+					out_file.write('''mhcflurry-predict --alleles %s --peptides %s --out %s --models /home/neofuse/.local/share/mhcflurry/4/1.4.0/models_class1/models &\n''' % (hla, peptides[i], out))
 					out_file.write("wait\n")
 					counter = 1
 			counter += 1
