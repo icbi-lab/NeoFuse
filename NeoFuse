@@ -296,12 +296,12 @@ if [ "$BUILD" == "false" ]; then
 					exit 1
 				fi
 				if [ "$IN" != "" ]; then
-					singularity exec $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+					singularity exec --no-home $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
 				elif [ "$READ1" != "" ]; then
 					if [ "$READ2" == "" ]; then
-						singularity exec $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+						singularity exec --no-home $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
 					else
-						singularity exec $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -T $RANK -t $THRESHOLD -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+						singularity exec --no-home $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -T $RANK -t $THRESHOLD -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
 					fi
 				else
 					echo "Invalid arguments"
