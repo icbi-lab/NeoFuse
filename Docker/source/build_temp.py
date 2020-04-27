@@ -39,8 +39,8 @@ def final_out(infileAssoc, outfile):
 					alleles.append(row[0])
 					peptide.append(row[1])
 					prediction.append(row[2])
-					percentile.append(row[5])
-					out_file.write(fGene[i].replace("_", "-")+"\t"+gene1[i]+"\t"+gene2[i]+"\t"+row[0]+"\t"+row[1]+"\t"+row[2]+"\t"+row[5]+"\t"+ftype[i]+"\t"+stopCod[i]+"\t"+confidence[i]+"\n")
+					percentile.append(row[3])
+					out_file.write(fGene[i].replace("_", "-")+"\t"+gene1[i]+"\t"+gene2[i]+"\t"+row[0]+"\t"+row[1]+"\t"+row[2]+"\t"+row[3]+"\t"+ftype[i]+"\t"+stopCod[i]+"\t"+confidence[i]+"\n")
 			i+=1
 			csv_file.close()
 	out_file.close()

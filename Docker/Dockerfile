@@ -45,7 +45,8 @@ RUN apt-get update -y && apt-get install -y \
 	git-lfs \
 	tcsh \
 	gawk \
-	procps
+	procps && \
+	pip install --upgrade pip
 
 
 # Set working directory
@@ -62,6 +63,15 @@ RUN set -ex && \
 	cd /usr/local/bin && \
 	'rm' -rf STAR-${STAR_VERSION} && \
 	rm -rf ${STAR_VERSION}.zip
+
+# Install YARA
+RUN git clone https://github.com/seqan/seqan.git && \
+	mkdir yara-build
+WORKDIR /usr/local/bin/yara-build/
+RUN cmake ../seqan -DSEQAN_BUILD_SYSTEM=APP:yara && \
+	make all && \
+	ln -s /usr/local/bin/yara-build/bin/yara* /usr/local/bin/
+WORKDIR /usr/local/bin/
 
 # Install Razers3
 RUN wget --no-check-certificate http://packages.seqan.de/razers3/razers3-3.5.8-Linux-x86_64.tar.xz && \
@@ -94,6 +104,10 @@ RUN mv /usr/local/bin/OptiType-${optitype_version}/config.ini.example /usr/local
 	sed -i 's/\/path\/to\//\/usr\/local\/bin\//' /usr/local/bin/OptiType-${optitype_version}/config.ini && \
 	sed -i 's/threads=16/threads=8/g' /usr/local/bin/OptiType-${optitype_version}/config.ini && \
 	sed -i 's/glpk/cbc/' /usr/local/bin/OptiType-${optitype_version}/config.ini
+
+## Create YARA intexes from OptiType HLA reference
+RUN mkdir /usr/local/bin/yara_idx/ && \
+	yara_indexer /usr/local/bin/OptiType-1.3.2/data/hla_reference_rna.fasta -o /usr/local/bin/yara_idx/hla_reference_rna
 
 # Install R and packages 
 RUN export DEBIAN_FRONTEND=noninteractive && \
@@ -156,8 +170,13 @@ RUN apt-get autoclean -y && apt-get clean -y && \
 	rm /usr/local/bin/subread-1.6.1-source.tar.gz && \
 	rm /usr/local/bin/v1.3.2.zip
 
+WORKDIR /usr/local/bin/
+
 # Install MHCFlurry
 RUN pip install mhcflurry
+
+ENV MHCFLURRY_DEFAULT_CLASS1_MODELS /home/neofuse/.local/share/mhcflurry/4/1.6.0
+# ENV MHCFLURRY_DOWNLOADS_DIR /home/neofuse/.local/share/mhcflurry/4/1.4.0
 
 RUN useradd -ms /bin/bash neofuse
 USER neofuse

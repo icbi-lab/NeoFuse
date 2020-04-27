@@ -28,8 +28,9 @@ NETMHCPAN="false"
 BUILD="false"
 BUILDREF="false"
 VERSION="GRCh38"
+CUSTOMLIST="false"
 
-while getopts ":1::2::d::i::o::m::M::n::t::T::c::s::g::a::l::-::N::BRV::h" opt;
+while getopts ":1::2::d::i::o::m::M::n::t::T::c::s::g::a::l::C::-::N::BRV::h" opt;
 do
 	case $opt in
 	1)	READ1="$OPTARG";;
@@ -48,6 +49,7 @@ do
 	a)	ANNOTATION="$OPTARG";;
 	N)	NETMHCPAN="$OPTARG";;
 	l)	RAMLIMIT="$OPTARG";;
+	C)	CUSTOMLIST="$OPTARG";;
 	-)	IMAGE="$OPTARG";;
 	B)	BUILD="true";;
 	R)	BUILDREF="true";;
@@ -72,6 +74,7 @@ if [ "$BUILD" == "false" ]; then
 
 	-B: Build singularity/docker image
 	-R: Build indexes
+	-V: Genome version (currently supported: GRCh38 or GRCh37, default: "GRCh38")
 
 	[Options]
 
@@ -81,6 +84,7 @@ if [ "$BUILD" == "false" ]; then
 	-t: IC50 binding affinity threshold (default: 500)
 	-T: Percentile rank threshold (default: Inf)
 	-c: Mimimum confidence score (H, M or L; default: L)
+	-C: Custom HLA I list (TXT file containing custom HLA I types)
 
 	--singularity: NeoFuse will use the Singularity image
 	--docker: NeoFuse will use the Docker image
@@ -190,6 +194,16 @@ if [ "$BUILD" == "false" ]; then
 		READ2=`realpath2 $READ2`
 	fi
 
+	if [ "$CUSTOMLIST" != "false" ]; then
+		if test $CUSTOMLIST; then
+			CUSTOMLIST=`realpath2 $CUSTOMLIST`
+		else
+			echo "No custom HLA I list found"
+			echo "Exiting ..."
+			exit 1
+		fi
+	fi
+
 	mkdir -p $OUTDIR
 	OUTDIR=`realpath2 $OUTDIR`
 	STARINDEX=`realpath2 $STARINDEX`
@@ -223,8 +237,13 @@ if [ "$BUILD" == "false" ]; then
 			INDIR=$(dirname "${INDIR}")
 			sed -i "s%$INDIR%/mnt/data%g" $IN
 			INDIR=`realpath2 $INDIR`
-			SMOUNT="-B $INDIR:/mnt/data,$IN:/mnt/$(echo ${IN##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
-			DMOUNT="-v $INDIR:/mnt/data -v $IN:/mnt/$(echo ${IN##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
+			if [ "$CUSTOMLIST" != "false" ]; then
+				SMOUNT="-B $INDIR:/mnt/data,$IN:/mnt/$(echo ${IN##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/}),$CUSTOMLIST:/mnt/$(echo ${CUSTOMLIST##*/})"
+				DMOUNT="-v $INDIR:/mnt/data -v $IN:/mnt/$(echo ${IN##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/}) -v $CUSTOMLIST:/mnt/$(echo ${CUSTOMLIST##*/})"
+			else
+				SMOUNT="-B $INDIR:/mnt/data,$IN:/mnt/$(echo ${IN##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
+				DMOUNT="-v $INDIR:/mnt/data -v $IN:/mnt/$(echo ${IN##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
+			fi
 			if [ "$NETMHCPAN" == "false" ]; then
 				:
 			else
@@ -235,8 +254,13 @@ if [ "$BUILD" == "false" ]; then
 		fi
 
 		if [ "$READ1" != "" ]; then
-			SMOUNT="-B $READ1:/mnt/data/$(echo ${READ1##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
-			DMOUNT="-v $READ1:/mnt/data/$(echo ${READ1##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
+			if [ "$CUSTOMLIST" != "false" ]; then
+				SMOUNT="-B $READ1:/mnt/data/$(echo ${READ1##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/}),$CUSTOMLIST:/mnt/$(echo ${CUSTOMLIST##*/})"
+				DMOUNT="-v $READ1:/mnt/data/$(echo ${READ1##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/}) -v $CUSTOMLIST:/mnt/$(echo ${CUSTOMLIST##*/})"
+			else
+				SMOUNT="-B $READ1:/mnt/data/$(echo ${READ1##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
+				DMOUNT="-v $READ1:/mnt/data/$(echo ${READ1##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
+			fi
 			if [ "$NETMHCPAN" == "false" ]; then
 				:	
 			else
@@ -257,6 +281,11 @@ if [ "$BUILD" == "false" ]; then
 		GENOMEDIR="/mnt/genome/$(echo ${GENOMEDIR##*/})"
 		ANNOTATION="/mnt/genome/$(echo ${ANNOTATION##*/})"
 		READ1="/mnt/data/$(echo ${READ1##*/})"
+		if [ "$CUSTOMLIST" != "false" ]; then
+			CUSTOMLIST="/mnt/$(echo ${CUSTOMLIST##*/})"
+		else
+			:
+		fi
 		if [ "$NETMHCPAN" == "false" ]; then
 			:
 		else
@@ -267,12 +296,12 @@ if [ "$BUILD" == "false" ]; then
 		if [ "$IMAGE" == "docker" ]; then
 			if [ -x "$(command -v docker)" ]; then
 				if [ "$IN" != "" ]; then
-					docker run --rm $DMOUNT icbi/neofuse NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+					docker run --rm $DMOUNT icbi/neofuse NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST
 				elif [ "$READ1" != "" ]; then
 					if [ "$READ2" == "" ]; then
-						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST
 					else
-						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST
 					fi
 				else
 					echo "Invalid arguments"
@@ -296,12 +325,12 @@ if [ "$BUILD" == "false" ]; then
 					exit 1
 				fi
 				if [ "$IN" != "" ]; then
-					singularity exec --no-home $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+					singularity exec $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST
 				elif [ "$READ1" != "" ]; then
 					if [ "$READ2" == "" ]; then
-						singularity exec --no-home $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+						singularity exec $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST
 					else
-						singularity exec --no-home $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -T $RANK -t $THRESHOLD -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT
+						singularity exec $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -T $RANK -t $THRESHOLD -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST
 					fi
 				else
 					echo "Invalid arguments"
