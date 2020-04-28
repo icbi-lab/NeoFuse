@@ -235,7 +235,8 @@ do
 		samtools index ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam
 
 		if [ "$CUSTOMLIST" != "false" ]; then
-			cat $CUSTOMLIST > ${OUTDIROPTI}"/"$FILE"_HLA_Optitype.txt"
+			echo " Parsing custom HLA list:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+			python3 /usr/local/bin/source/custom_hla_parser.py --custom_list $CUSTOMLIST --output_dir ${OUTDIROPTI}"/" --sample_name $FILE
 		else
 			# YARA + OptiType
 			## YARA
@@ -333,7 +334,8 @@ do
 		samtools index ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam
 
 		if [ "$CUSTOMLIST" != "false" ]; then
-			cat $CUSTOMLIST > ${OUTDIROPTI}"/"$FILE"_HLA_Optitype.txt"
+			echo " Parsing custom HLA list:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+			python3 /usr/local/bin/source/custom_hla_parser.py --custom_list $CUSTOMLIST --output_dir ${OUTDIROPTI}"/" --sample_name $FILE
 		else
 			# YARA + OptiType
 			## YARA
@@ -509,6 +511,14 @@ do
 	fi
 	## Clean up
 	echo " Removing Intermediate Files:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+	if [ "$CUSTOMLIST" != "false" ]; then
+		mkdir -p $OUTDIR"Custom_HLAs/"
+		mv ${OUTDIROPTI}"/"$FILE"_HLA_Optitype.txt" $OUTDIR"Custom_HLAs/"$FILE"_custom_HLA_I.txt"
+		mv ${OUTDIROPTI}"/"$FILE"_custom_HLA_II.txt" $OUTDIR"Custom_HLAs/"
+		rm -rf ${OUTDIROPTI}
+	else
+		:
+	fi
 	rm $FINALOUTDIR$FILE"_tmp_filtered.tsv"
 	rm $OUTDIRARRIBA$FILE".Log.progress.out"
 	rm $OUTDIRARRIBA$FILE".SJ.out.tab"
