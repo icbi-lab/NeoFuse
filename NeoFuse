@@ -31,7 +31,7 @@ VERSION="GRCh38"
 CUSTOMLIST="false"
 KEEPBAM="false"
 
-while getopts ":1::2::d::i::o::m::M::n::t::T::c::s::g::a::l::k::C::-::N::BRV::h" opt;
+while getopts ":1::2::d::i::o::m::M::n::t::T::c::s::g::a::l::C::-::N::kBRV::h" opt;
 do
 	case $opt in
 	1)	READ1="$OPTARG";;
