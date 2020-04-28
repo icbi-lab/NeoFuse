@@ -29,8 +29,9 @@ BUILD="false"
 BUILDREF="false"
 VERSION="GRCh38"
 CUSTOMLIST="false"
+KEEPBAM="false"
 
-while getopts ":1::2::d::i::o::m::M::n::t::T::c::s::g::a::l::C::-::N::BRV::h" opt;
+while getopts ":1::2::d::i::o::m::M::n::t::T::c::s::g::a::l::k::C::-::N::BRV::h" opt;
 do
 	case $opt in
 	1)	READ1="$OPTARG";;
@@ -50,6 +51,7 @@ do
 	N)	NETMHCPAN="$OPTARG";;
 	l)	RAMLIMIT="$OPTARG";;
 	C)	CUSTOMLIST="$OPTARG";;
+	k)	KEEPBAM="$OPTARG";;
 	-)	IMAGE="$OPTARG";;
 	B)	BUILD="true";;
 	R)	BUILDREF="true";;
@@ -85,6 +87,7 @@ if [ "$BUILD" == "false" ]; then
 	-T: Percentile rank threshold (default: Inf)
 	-c: Mimimum confidence score (H, M or L; default: L)
 	-C: Custom HLA I list (TXT file containing custom HLA I types)
+	-k: Keep STAR output
 
 	--singularity: NeoFuse will use the Singularity image
 	--docker: NeoFuse will use the Docker image
@@ -122,6 +125,11 @@ if [ "$BUILD" == "false" ]; then
 		fi
 	else
 		:
+	fi
+	if [ "$KEEPBAM" == "false" ]; then
+		:
+	elif [ "$KEEPBAM" == "" ]; then
+		KEEPBAM="true"
 	fi
 	if [ "$THRESHOLD" == "" ] && [ "$RANK" == "" ]; then
 		THRESHOLD=500
@@ -296,12 +304,12 @@ if [ "$BUILD" == "false" ]; then
 		if [ "$IMAGE" == "docker" ]; then
 			if [ -x "$(command -v docker)" ]; then
 				if [ "$IN" != "" ]; then
-					docker run --rm $DMOUNT icbi/neofuse NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST
+					docker run --rm $DMOUNT icbi/neofuse NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM
 				elif [ "$READ1" != "" ]; then
 					if [ "$READ2" == "" ]; then
-						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST
+						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM
 					else
-						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST
+						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM
 					fi
 				else
 					echo "Invalid arguments"
@@ -325,12 +333,12 @@ if [ "$BUILD" == "false" ]; then
 					exit 1
 				fi
 				if [ "$IN" != "" ]; then
-					singularity exec $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST
+					singularity exec $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM
 				elif [ "$READ1" != "" ]; then
 					if [ "$READ2" == "" ]; then
-						singularity exec $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST
+						singularity exec $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM
 					else
-						singularity exec $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -T $RANK -t $THRESHOLD -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST
+						singularity exec $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -T $RANK -t $THRESHOLD -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM
 					fi
 				else
 					echo "Invalid arguments"

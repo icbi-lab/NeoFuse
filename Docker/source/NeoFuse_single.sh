@@ -16,9 +16,10 @@ THRESHOLD=""
 RANK=""
 CONF="L"
 CUSTOMLIST="false"
+KEEPBAM="false"
 NETMHCPAN="false"
 
-while getopts "1:2::d::o::m::M::n::t::T::c::s::g::a::r::C::N::l::" opt;
+while getopts "1:2::d::o::m::M::n::t::T::c::s::g::a::r::C::N::l::k::" opt;
 do
 	case $opt in
 	1)	READ1="$OPTARG";;
@@ -37,6 +38,7 @@ do
 	r)	REALOUT="$OPTARG";;
 	l)	RAMLIMIT="$OPTARG";;
 	C)	CUSTOMLIST="$OPTARG";;
+	k)	KEEPBAM="$OPTARG";;
 	N)	NETMHCPAN="$OPTARG";;
 	esac
 done
@@ -491,7 +493,11 @@ rm $OUTDIRARRIBA"/"$FILE".Log.progress.out"
 rm $OUTDIRARRIBA"/"$FILE".SJ.out.tab"
 mv $OUTDIRARRIBA"/"$FILE".Log."* $LOGSDIR
 rm -r $FINALTMP
-rm -rf $OUTDIR"/STAR/"
+if [ "$KEEPBAM" == "false" ]; then
+	rm -rf $OUTDIR"/STAR/"
+else
+	:
+fi
 rm -rf $OUTDIR"/FeatureCounts/"
 rm -rf $OUTDIR"/RPKM/"
 rm -rf $OUTDIR"/Peptides/"

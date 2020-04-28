@@ -16,9 +16,10 @@ THRESHOLD=""
 RANK=""
 CONF="L"
 CUSTOMLIST="false"
+KEEPBAM="false"
 NETMHCPAN="false"
 
-while getopts "i:o::m::M::n::t::T::c::s::g::a::r::C::N::l::" opt;
+while getopts "i:o::m::M::n::t::T::c::s::g::a::r::C::N::l::k::" opt;
 do
 	case $opt in
 	i)	IN="$OPTARG";;
@@ -36,6 +37,7 @@ do
 	r)	REALOUT="$OPTARG";;
 	l)	RAMLIMIT="$OPTARG";;
 	C)	CUSTOMLIST="$OPTARG";;
+	k)	KEEPBAM="$OPTARG";;
 	N)	NETMHCPAN="$OPTARG";;
 	esac
 done
@@ -511,7 +513,11 @@ do
 	rm $OUTDIRARRIBA$FILE".Log.progress.out"
 	rm $OUTDIRARRIBA$FILE".SJ.out.tab"
 	mv $OUTDIRARRIBA$FILE".Log."* $LOGSDIR
-	rm -rf $OUTDIRALIGN
+	if [ "$KEEPBAM" == "false" ]; then
+		rm -rf $OUTDIR"/STAR/"
+	else
+		:
+	fi
 	rm -rf $OUTDIRCOUNTS
 	rm -rf $OUTDIRRPKM
 	rm -rf $OUTDIRCLEAVEPEP
