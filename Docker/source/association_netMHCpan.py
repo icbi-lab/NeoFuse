@@ -3,7 +3,7 @@ import argparse, sys
 import csv, re
 
 # Function to retrieve fusion gene names, peptide sequences and confidence level
-def seek_fusePep(xenoInFile, fusionGene, peps, ftype, confidence, stopCod):
+def seek_fusePep(xenoInFile, fusionGene, bkpoint1, bkpoint2, peps, ftype, confidence, stopCod):
 	with open(xenoInFile) as in_file:
 		for line in in_file:
 			gene1 = line.split("#", 1)[0].split("\t", 1)[0].split(" - ")[0]
@@ -13,7 +13,9 @@ def seek_fusePep(xenoInFile, fusionGene, peps, ftype, confidence, stopCod):
 			peps.append(line.split("#", 1)[0].split("\t", 1)[1].replace("\t", " ").upper())
 			ftype.append(line.split("#", 2)[1])
 			confidence.append(line.split("#")[2])
-			stopCod.append(line.split("#")[3].replace("\n", ""))
+			stopCod.append(line.split("#")[3])
+			bkpoint1.append(line.split("#")[4])
+			bkpoint2.append(line.split("#")[5].replace("\n", ""))
 	in_file.close()
 	return fusionGene, peps, ftype, confidence, stopCod
 
@@ -30,7 +32,7 @@ def seek_hla(optiInFile, outDir, hla):
 	return hla
 
 # Function to build the associations and Mhcflurry run intermidiate files
-def tmp_out_pep(xenoInFile, tmpOutFile1, tmpOutFile2, outDir, fGenes, peptidesFile, hla, ftype, confidence, stopCod, cores, pepList, path):
+def tmp_out_pep(xenoInFile, tmpOutFile1, tmpOutFile2, outDir, fGenes, bkpoint1, bkpoint2, peptidesFile, hla, ftype, confidence, stopCod, cores, pepList, path):
 	gene_file=[]
 	counter=2 # used for parallelizing mhcflurry jobs
 	fileID=1 # used in printing fusion gene names and corresponding peptide sequences at the MHCFlurry run file
@@ -51,7 +53,7 @@ def tmp_out_pep(xenoInFile, tmpOutFile1, tmpOutFile2, outDir, fGenes, peptidesFi
 			out=outDir+"_"+fGenes[i].split(",")[0].split("(")[0]+"_"+str(fileID)+postfix1
 			pepFile=outDir+"_"+fGenes[i].split(",")[0].split("(")[0]+"_"+str(fileID)+postfix2
 			pepList.append(pepFile)
-			gene_file.append(fGene[i]+"#"+out+"#"+ftype[i]+"#"+confidence[i]+"#"+stopCod[i]) #get the lines for the associations file
+			gene_file.append(fGene[i]+"#"+out+"#"+ftype[i]+"#"+confidence[i]+"#"+stopCod[i]+"#"+bkpoint1[i]+"#"+bkpoint2[i]) #get the lines for the associations file
 			if counter <= cores:
 				out_file.write('''%s/Linux_x86_64/bin/netMHCpan -a %s -p %s -BA > %s &\n''' % (path, hla, pepFile, out))
 			else:
@@ -77,6 +79,8 @@ if __name__ == "__main__":
 	parser.add_argument('-c','--cores', help='Number of cores', type=int, required=False)
 	args = parser.parse_args()
 	fGene=[]
+	bkpoint1 = []
+	bkpoint2 = []
 	peps=[]
 	ftype=[]
 	confidence=[]
@@ -91,10 +95,10 @@ if __name__ == "__main__":
 	outFile1 = outDir+"_TEST_OUT.sh"
 	outFile2 = outDir+"_ASSOCIATIONS_OUT.txt"
 
-	seek_fusePep(xenoFile, fGene, peps, ftype, confidence, stopCod)
+	seek_fusePep(xenoFile, fGene, bkpoint1, bkpoint2, peps, ftype, confidence, stopCod)
 	hla = seek_hla(optiInFile, outDir, hla)
 
-	tmp_out_pep(xenoFile, outFile1, outFile2, outDir, fGene, peps, hla, ftype, confidence, stopCod, cores, pepList, path)
+	tmp_out_pep(xenoFile, outFile1, outFile2, outDir, fGene, bkpoint1, bkpoint2, peps, hla, ftype, confidence, stopCod, cores, pepList, path)
 
 	for i in range(0, len(pepList)):
 		with open(pepList[i], "+w") as out_file:

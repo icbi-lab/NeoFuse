@@ -7,6 +7,8 @@ def desperation(inFile1, inFile2, outFile):
     tpm=[]
     gene1tpm=[]
     gene2tpm=[]
+    bkpoint1=[]
+    bkpoint2=[]
     hlaTpm=[]
     tpmAvg=[]
     fusion=[]
@@ -33,12 +35,14 @@ def desperation(inFile1, inFile2, outFile):
         in_file.readline()
         for row in csv_reader:
             fusion.append(row[0])
-            fpep.append(row[4])
-            mIc.append(row[5])
-            mRank.append(row[6])
-            eveType.append(row[7])
-            stopCod.append(row[8])
-            arConf.append(row[9])
+            bkpoint1.append(row[3])
+            bkpoint2.append(row[4])
+            fpep.append(row[6])
+            mIc.append(row[7])
+            mRank.append(row[8])
+            eveType.append(row[9])
+            stopCod.append(row[10])
+            arConf.append(row[11])
             if "," in row[1]:
                 gene1tpm.append(row[1]+"\t"+"NA")
             elif "," in row[2]:
@@ -54,11 +58,11 @@ def desperation(inFile1, inFile2, outFile):
                         gene2tpm.append(row[2]+"\t"+tpm[i])
                     elif tpm[i] != "NA":
                         gene2tpm.append(row[2]+"\t"+"%.2f" % float(tpm[i]))
-                if gene[i] == row[3].split("*")[0]:
+                if gene[i] == row[5].split("*")[0]:
                     if tpm[i] == "NA":
-                        hlaTpm.append(row[3]+"\t"+tpm[i])
+                        hlaTpm.append(row[5]+"\t"+tpm[i])
                     elif tpm[i] != "NA":
-                        hlaTpm.append(row[3]+"\t"+"%.2f" % float(tpm[i]))
+                        hlaTpm.append(row[5]+"\t"+"%.2f" % float(tpm[i]))
     in_file.close()
     for i in  range(0, len(gene1tpm)):
         if "NA" in gene1tpm[i].split("\t")[1] or "NA" in gene2tpm[i].split("\t")[1]:
@@ -67,9 +71,9 @@ def desperation(inFile1, inFile2, outFile):
             tpmAvg.append("%.2f" % float((float(gene1tpm[i].split("\t")[1])+float(gene2tpm[i].split("\t")[1]))/2.0))
 
     with open(outFile, "+w") as out_file:
-        out_file.write("Fusion\tGene1\tGene2\tHLA_Type\tFusion_Peptide\tIC50\tRank\tEvent_Type\tStop_Codon\tConfidence\tGene1_TPM\tGene2_TPM\tAvg_TPM\tHLA_TPM\n")
+        out_file.write("Fusion\tGene1\tGene2\tBreakpoint1\tBreakpoint2\tHLA_Type\tFusion_Peptide\tIC50\tRank\tEvent_Type\tStop_Codon\tConfidence\tGene1_TPM\tGene2_TPM\tAvg_TPM\tHLA_TPM\n")
         for j in range(0, len(fusion)):
-            out_file.write(fusion[j]+"\t"+gene1tpm[j].split("\t")[0]+"\t"+gene2tpm[j].split("\t")[0]+"\t"+hlaTpm[j].split("\t")[0]+"\t"+fpep[j]+"\t"+mIc[j]+"\t"+mRank[j]+"\t"+eveType[j]+"\t"+stopCod[j]+"\t"+arConf[j]+"\t"+gene1tpm[j].split("\t")[1]+"\t"+gene2tpm[j].split("\t")[1]+"\t"+tpmAvg[j]+"\t"+hlaTpm[j].split("\t")[1]+"\n")
+            out_file.write(fusion[j]+"\t"+gene1tpm[j].split("\t")[0]+"\t"+gene2tpm[j].split("\t")[0]+"\t"+bkpoint1[j]+"\t"+bkpoint2[j]+"\t"+hlaTpm[j].split("\t")[0]+"\t"+fpep[j]+"\t"+mIc[j]+"\t"+mRank[j]+"\t"+eveType[j]+"\t"+stopCod[j]+"\t"+arConf[j]+"\t"+gene1tpm[j].split("\t")[1]+"\t"+gene2tpm[j].split("\t")[1]+"\t"+tpmAvg[j]+"\t"+hlaTpm[j].split("\t")[1]+"\n")
         out_file.close()
 
 if __name__ == "__main__":

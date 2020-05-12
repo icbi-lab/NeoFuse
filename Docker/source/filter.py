@@ -13,15 +13,15 @@ def purge(inFile, outFile, threshold, rank, confidence):
     in_file.close()
     
     for row in inRows:
-        if float(row[5]) <= float(threshold) and float(row[5]) <= float(rank):
+        if float(row[7]) <= float(threshold) and float(row[8]) <= float(rank):
             for conf in confidence:
-                if conf in row[9]:
+                if conf in row[11]:
                     outRows.append(row)
         else:
             pass
 
     with open(outFile, "+w") as out_file:
-        out_file.write("Fusion\tGene1\tGene2\tHLA_Type\tFusion_Peptide\tIC50\tRank\tEvent_Type\tStop_Codon\tConfidence\n")
+        out_file.write("Fusion\tGene1\tGene2\tBreakpoint1\tBreakpoint2\tHLA_Type\tFusion_Peptide\tIC50\tRank\tEvent_Type\tStop_Codon\tConfidence\n")
         for row in outRows:
             out_file.write("%s\n" % "\t".join(row))
     out_file.close()
