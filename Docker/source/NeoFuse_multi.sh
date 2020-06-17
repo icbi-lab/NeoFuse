@@ -267,8 +267,7 @@ do
 			tmpFile=`ls ${TEMPDIROPTI}/*/*result.tsv`
 			pdfFile=`ls ${TEMPDIROPTI}/*/*_coverage_plot.pdf`
 			mv $pdfFile $OutFile2
-			tail -1 $tmpFile | cut -f 2-7 | tr "\t" "\n" | sort | uniq > $OutFile1 &
-			rm -rf $TEMPDIROPTI
+			tail -1 $tmpFile | cut -f 2-7 | tr "\t" "\n" | sort | uniq > $OutFile1
 		fi
 
 		# Asign Reads to features (featureCounts)
@@ -359,8 +358,7 @@ do
 			tmpFile=`ls ${TEMPDIROPTI}/*/*result.tsv`
 			pdfFile=`ls ${TEMPDIROPTI}/*/*_coverage_plot.pdf`
 			mv $pdfFile $OutFile2
-			tail -1 $tmpFile | cut -f 2-7 | tr "\t" "\n" | sort | uniq > $OutFile1 &
-			rm -rf $TEMPDIROPTI
+			tail -1 $tmpFile | cut -f 2-7 | tr "\t" "\n" | sort | uniq > $OutFile1
 		fi
 		
 		# Asign Reads to features (featureCounts)
@@ -517,7 +515,7 @@ do
 		mv ${OUTDIROPTI}"/"$FILE"_custom_HLA_II.txt" $OUTDIR"Custom_HLAs/"
 		rm -rf ${OUTDIROPTI}
 	else
-		:
+		rm -rf $TEMPDIROPTI
 	fi
 	rm $FINALOUTDIR$FILE"_tmp_filtered.tsv"
 	rm $OUTDIRARRIBA$FILE".Log.progress.out"
