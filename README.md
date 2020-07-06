@@ -124,7 +124,7 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 
 \* NeoFuse will compute the binding affinity for all the possible lengths of peptides between the minimum and maximum input. For example if a user specifies '-m 8' and '-M 11', NeoFuse will compute the binding affinity for all peptides of length 8, 9, 10, and 11. To consider just one specific length, use **only** the '-m' argument.
 
-** The [mimimum Arriba confidence score](https://arriba.readthedocs.io/en/latest/interpretation-of-results/) can be set to: H (to return only high confidence fusions), M (for high and medium confidence fusions), or L (for high, medium, and low confidence fusions).
+** The [minimum Arriba confidence score](https://arriba.readthedocs.io/en/latest/interpretation-of-results/) can be set to: H (to return only high confidence fusions), M (for high and medium confidence fusions), or L (for high, medium, and low confidence fusions).
 
 ### 2.2. Analysis of multiple samples
 
@@ -185,12 +185,12 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 
 **--docker:** NeoFuse will use the Docker image
 
-\* NeoFuse will compute the binding affinity for all the possible lengths of peptides between the minimum and maximum input. For example if a user specifies '-m 8' and '-M 11', NeoFuse will comppute the binding affinity for all peptides of length 8, 9, 10, and 11. To consider just one specific length, use **only** the '-m' argument.
+\* NeoFuse will compute the binding affinity for all the possible lengths of peptides between the minimum and maximum input. For example if a user specifies '-m 8' and '-M 11', NeoFuse will compute the binding affinity for all peptides of length 8, 9, 10, and 11. To consider just one specific length, use **only** the '-m' argument.
 
 ** The [mimimum Arriba confidence score](https://arriba.readthedocs.io/en/latest/interpretation-of-results/) can be set to: H (to return only high confidence fusions), M (for high and medium confidence fusions), or L (for high, medium, and low confidence fusions).
 
 ### 2.3. Binding affinity prediction with netMHCpan
-Due to license compatability issues, netMHCpan is fully integrated but **not distributed** as part of NeoFuse. 
+Due to license compatibility issues, netMHCpan is fully integrated but **not distributed** as part of NeoFuse. 
 
 If there is an existing local [installation](http://www.cbs.dtu.dk/cgi-bin/nph-sw_request?netMHCpan) of netMHCpan, peptide-HLA binding affinity (IC50 and rank) can be predicted with netMHCpan instead of MHCflurry using the following command:
 
