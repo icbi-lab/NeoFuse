@@ -52,12 +52,12 @@ The NeoFuse script can be also used to generate the genomes and indexes required
 
 **Docker:**
 ```
-$ Neofuse -R -o </path/to/output_folder> -n [cores] -V [genome version] --docker
+$ NeoFuse -R -o </path/to/output_folder> -n [cores] -V [genome version] --docker
 ```
 
 **Singularity:**
 ```
-$ Neofuse -R -o </path/to/output_folder> -n [cores] -V [genome version] --singularity
+$ NeoFuse -R -o </path/to/output_folder> -n [cores] -V [genome version] --singularity
 ```
 
 **\<Arguments\>**
