@@ -54,7 +54,7 @@ then
 	REALOUT=$OUTDIR
 fi
 
-if test -z "$READ1" 
+if test -z "$READ1"
 then
 	echo "usage: NeoFuse_single -1 <Read_1> -2 [Read_2] -d [ID] -o [output] -m [peptide min length] -M [peptide Max length] -n [cores] -c [confidence level] -t [affinity threshold] -s <STAR index> -g <FASTA file> -a <GTF file>"
 	echo "You must specify at least one input file and make sure the file is readable"
@@ -109,7 +109,9 @@ if [ $CORES -le 3 ]; then
 	STARTHREADS=1
 	ARRIBATHREADS=1
 	RAZERTHREADS=1
+	SAMTOOLSTHREADS=1
 else
+	SAMTOOLSTHREADS=2
 	if [ $(($CORES % 2)) -eq 0 ]; then
 		STARTHREADS=$(($CORES / 2))
 		ARRIBATHREADS=$(($CORES / 2))
@@ -117,7 +119,7 @@ else
 	else
 		STARTHREADS=$((($CORES -1) / 2))
 		ARRIBATHREADS=$((($CORES -1) / 2))
-		RAZERTHREADS=$((($CORES -1) / 2)) 
+		RAZERTHREADS=$((($CORES -1) / 2))
 	fi
 fi
 
@@ -177,9 +179,13 @@ if test -f "$READ2"; then
 	--readFilesIn $READ1 $READ2 $ZIPPED \
 	--outFileNamePrefix $OUTDIRALIGN$FILE"." \
 	--genomeLoad NoSharedMemory \
-	--limitBAMsortRAM $RAMLIMIT \
 	--outReadsUnmapped Fastx \
-	--outSAMtype BAM SortedByCoordinate > $LOGSDIR$FILE.STAR.log 2>$LOGSDIR$FILE.STAR.err &
+	--outStd BAM_Unsorted \
+	--outBAMcompression 0 \
+	--outSAMtype BAM Unsorted 2>$LOGSDIR$FILE.STAR.err |
+		samtools sort -@ $SAMTOOLSTHREADS -O BAM -o ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam /dev/stdin \
+		> $LOGSDIR$FILE.samtools.log 2>$LOGSDIR$FILE.samtools.err &
+	mv Log.std.out $LOGSDIR$FILE.STAR.log
 
 	# Arriba
 	echo " Arriba Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
@@ -273,10 +279,14 @@ else
 		--readFilesIn $READ1 $ZIPPED \
 		--outFileNamePrefix $OUTDIRALIGN$FILE"." \
 		--genomeLoad NoSharedMemory \
-		--limitBAMsortRAM $RAMLIMIT \
 		--outReadsUnmapped Fastx \
-		--outSAMtype BAM SortedByCoordinate > $LOGSDIR$FILE.STAR.log 2>$LOGSDIR$FILE.STAR.err &
-	
+		--outStd BAM_Unsorted \
+		--outBAMcompression 0 \
+		--outSAMtype BAM Unsorted 2>$LOGSDIR$FILE.STAR.err |
+			samtools sort -@ $SAMTOOLSTHREADS -O BAM -o ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam /dev/stdin \
+			> $LOGSDIR$FILE.samtools.log 2>$LOGSDIR$FILE.samtools.err &
+		mv Log.std.out $LOGSDIR$FILE.STAR.log
+
 	# Arriba
 	echo " Arriba Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
 	STAR --runThreadN $ARRIBATHREADS \
