@@ -45,8 +45,14 @@ RUN apt-get update -y && apt-get install -y \
 	git-lfs \
 	tcsh \
 	gawk \
+	locales \
+	vim \
 	procps
 
+# Fix locale issues
+RUN export LC_ALL=en_US.UTF-8 && \
+	export LANG=en_US.UTF-8 && \
+	locale-gen en_US.UTF-8
 
 # Set working directory
 WORKDIR /usr/local/bin/
@@ -63,10 +69,19 @@ RUN set -ex && \
 	'rm' -rf STAR-${STAR_VERSION} && \
 	rm -rf ${STAR_VERSION}.zip
 
+# Install YARA
+RUN git clone https://github.com/seqan/seqan.git && \
+	mkdir yara-build
+WORKDIR /usr/local/bin/yara-build/
+RUN cmake ../seqan -DSEQAN_BUILD_SYSTEM=APP:yara && \
+	make all && \
+	ln -s /usr/local/bin/yara-build/bin/yara* /usr/local/bin/
+WORKDIR /usr/local/bin/
+
 # Install Razers3
-RUN wget --no-check-certificate http://packages.seqan.de/razers3/razers3-3.5.8-Linux-x86_64.tar.xz && \
-	tar xf razers3-3.5.8-Linux-x86_64.tar.xz && rm -f razers3-3.5.8-Linux-x86_64.tar.xz && \
-	ln -s /usr/local/bin/razers3-3.5.8-Linux-x86_64/bin/razers3 /usr/local/bin/razers3
+# RUN wget --no-check-certificate http://packages.seqan.de/razers3/razers3-3.5.8-Linux-x86_64.tar.xz && \
+# 	tar xf razers3-3.5.8-Linux-x86_64.tar.xz && rm -f razers3-3.5.8-Linux-x86_64.tar.xz && \
+# 	ln -s /usr/local/bin/razers3-3.5.8-Linux-x86_64/bin/razers3 /usr/local/bin/razers3
 
 # Install samtools
 ADD https://github.com/samtools/samtools/releases/download/${samtools_version}/samtools-${samtools_version}.tar.bz2 /usr/local/bin/
@@ -75,14 +90,28 @@ RUN tar -xjf /usr/local/bin/samtools-${samtools_version}.tar.bz2 -C /usr/local/b
 	cd /usr/local/bin/samtools-${samtools_version}/ && make && \
 	cd /usr/local/bin/samtools-${samtools_version}/ && make install
 
+# Install required python modules
+RUN python -m pip install --upgrade pip && \
+	python3 -m pip install --upgrade pip && \
+	python -m pip install 'NumPy' && \
+	python -m pip install 'Pyomo' && \
+	python -m pip install 'Pandas' && \
+	python -m pip install 'Pysam' && \
+	python -m pip install 'Matplotlib' && \
+	python -m pip install 'Future' && \
+	python -m pip install 'tables' && \
+	python3 -m pip install 'keras==2.3' && \
+	python3 -m pip install 'setuptools==47.3.1' && \
+	python3 -m pip install 'Pandas'
+
 # Install python modules
-RUN pip install 'NumPy==1.15.4' && \
-	pip install 'Pyomo==4.2.10784' && \
-	pip install 'Pandas==0.16.2' && \
-	pip install 'Pysam==0.8.3' && \
-	pip install 'Matplotlib==1.4.3' && \
-	pip install 'Future==0.15.2' && \
-	pip install 'tables==3.2.2'
+# RUN pip install 'NumPy==1.15.4' && \
+# 	pip install 'Pyomo==4.2.10784' && \
+# 	pip install 'Pandas==0.16.2' && \
+# 	pip install 'Pysam==0.8.3' && \
+# 	pip install 'Matplotlib==1.4.3' && \
+# 	pip install 'Future==0.15.2' && \
+# 	pip install 'tables==3.2.2'
 
 # Install OptiType
 RUN curl -SL https://github.com/FRED-2/OptiType/archive/v${optitype_version}.zip \
@@ -94,6 +123,10 @@ RUN mv /usr/local/bin/OptiType-${optitype_version}/config.ini.example /usr/local
 	sed -i 's/\/path\/to\//\/usr\/local\/bin\//' /usr/local/bin/OptiType-${optitype_version}/config.ini && \
 	sed -i 's/threads=16/threads=8/g' /usr/local/bin/OptiType-${optitype_version}/config.ini && \
 	sed -i 's/glpk/cbc/' /usr/local/bin/OptiType-${optitype_version}/config.ini
+
+## Create YARA indices from OptiType HLA reference
+RUN mkdir /usr/local/bin/yara_idx/ && \
+	yara_indexer /usr/local/bin/OptiType-1.3.2/data/hla_reference_rna.fasta -o /usr/local/bin/yara_idx/hla_reference_rna
 
 # Install R and packages 
 RUN export DEBIAN_FRONTEND=noninteractive && \
@@ -156,13 +189,18 @@ RUN apt-get autoclean -y && apt-get clean -y && \
 	rm /usr/local/bin/subread-1.6.1-source.tar.gz && \
 	rm /usr/local/bin/v1.3.2.zip
 
+WORKDIR /usr/local/bin/
+
 # Install MHCFlurry
 RUN pip install mhcflurry
+
+ENV MHCFLURRY_DEFAULT_CLASS1_MODELS /home/neofuse/.local/share/mhcflurry/4/2.0.0
+# ENV MHCFLURRY_DEFAULT_CLASS1_MODELS /home/neofuse/.local/share/mhcflurry/4/1.6.0
+# ENV MHCFLURRY_DOWNLOADS_DIR /home/neofuse/.local/share/mhcflurry/4/1.4.0
 
 RUN useradd -ms /bin/bash neofuse
 USER neofuse
 
-RUN mhcflurry-downloads fetch && \
- 	mhcflurry-downloads fetch models_class1
+RUN mhcflurry-downloads fetch models_class1
 
 WORKDIR /home/

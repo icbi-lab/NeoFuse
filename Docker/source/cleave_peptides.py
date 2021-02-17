@@ -21,8 +21,8 @@ def remove_dups(myList):
 			final_list.append(unique)
 	return final_list
 
-## Function to get fusion gene, protein sequence, event type and confidence level from input file
-def sequence_hound(inFile, fusionGene, pepSeq, ftype, confidence, stopCod):
+## Function to get fusion gene, breakpoints, protein sequence, event type and confidence level from input file
+def sequence_hound(inFile, fusionGene, bkpoint1, bkpoint2, pepSeq, ftype, confidence, stopCod):
 	drows=[]
 	with open(inFile) as csv_file:
 		csv_reader = csv.reader(csv_file, delimiter='\t') # parser
@@ -42,6 +42,8 @@ def sequence_hound(inFile, fusionGene, pepSeq, ftype, confidence, stopCod):
 				else:
 					stopCod.append("no")
 				fusionGene.append(f"{row[0]} - {row[1]}")
+				bkpoint1.append(row[4])
+				bkpoint2.append(row[5])
 				confidence.append(row[16])
 				if row[21] == "in-frame":
 					ftype.append("Fusion")
@@ -49,10 +51,10 @@ def sequence_hound(inFile, fusionGene, pepSeq, ftype, confidence, stopCod):
 					ftype.append("Fusion-out-of-frame")
 				pepSeq.append(row[22])
 	csv_file.close()
-	return fusionGene, pepSeq, ftype, confidence
+	return fusionGene, bkpoint1, bkpoint2, pepSeq, ftype, confidence
 
 ## Sanitize sequences - cleave at specified length
-def window_onslaught(outFile, pepSeq, fGene, winSize, ftype, confidence, stopCod):
+def window_onslaught(outFile, pepSeq, fGene, bkpoint1, bkpoint2, winSize, ftype, confidence, stopCod):
 	with open(outFile, "+w") as out_file:
 		for i in range(0,len(fGene)):
 			peptides = []
@@ -71,7 +73,7 @@ def window_onslaught(outFile, pepSeq, fGene, winSize, ftype, confidence, stopCod
 				if not peps: # check if there are no peptides of length <winsize>
 					pass
 				else:
-					out_file.write('%s\t%s#%s#%s#%s\n' % (fGene[i], ("\t" . join(peptides)), ftype[i], confidence[i], stopCod[i]))
+					out_file.write('%s\t%s#%s#%s#%s#%s#%s\n' % (fGene[i], ("\t" . join(peptides)), ftype[i], confidence[i], stopCod[i], bkpoint1[i], bkpoint2[i]))
 			if "Fusion-out-of-frame" == ftype[i]:
 				start = seq.index("|") # get the position of the junction
 				if winSize > start: # check if there are less amino acids than the window size
@@ -83,7 +85,7 @@ def window_onslaught(outFile, pepSeq, fGene, winSize, ftype, confidence, stopCod
 					if not peps:
 						pass
 					else:
-						out_file.write('%s\t%s#%s#%s#%s\n' % (fGene[i], ("\t" . join(peptides)), ftype[i], confidence[i], stopCod[i]))
+						out_file.write('%s\t%s#%s#%s#%s#%s#%s\n' % (fGene[i], ("\t" . join(peptides)), ftype[i], confidence[i], stopCod[i], bkpoint1[i], bkpoint2[i]))
 				if winSize <= start: #check if the amino acids are more or equal to the window size
 					splitat=start - (winSize-1) # Cut the part of gene 1 that doesn't span the junction
 					seq3 = seq[splitat:].replace("|", "")
@@ -94,7 +96,7 @@ def window_onslaught(outFile, pepSeq, fGene, winSize, ftype, confidence, stopCod
 					if not peps:
 						pass
 					else:
-						out_file.write('%s\t%s#%s#%s#%s\n' % (fGene[i], ("\t" . join(peptides)), ftype[i], confidence[i], stopCod[i]))
+						out_file.write('%s\t%s#%s#%s#%s#%s#%s\n' % (fGene[i], ("\t" . join(peptides)), ftype[i], confidence[i], stopCod[i], bkpoint1[i], bkpoint2[i]))
 	out_file.close()
 
 if __name__ == "__main__":
@@ -111,6 +113,8 @@ if __name__ == "__main__":
 	pepLen=args.peptides
 	ftype=[]
 	fusionGene=[]
+	bkpoint1 = []
+	bkpoint2 = []
 	confidence=[]
 	stopCod=[]
 	pep_seq=[]
@@ -118,9 +122,9 @@ if __name__ == "__main__":
 
 	# Commence the onslaught
 	## Release the hount - remove duplicates, fetch the sequences, gene names and confidence levels
-	sequence_hound(inFile, fusionGene, pep_seq, ftype, confidence, stopCod)
+	sequence_hound(inFile, fusionGene, bkpoint1, bkpoint2, pep_seq, ftype, confidence, stopCod)
 	## Cleave the fusion protein sequences at <user_defined> length
 	for a in pepLen:
 		out = outFile
 		out += ("_xeno_%s.tsv" % a)
-		window_onslaught(out, pep_seq, fusionGene, a, ftype, confidence, stopCod)
+		window_onslaught(out, pep_seq, fusionGene, bkpoint1, bkpoint2, a, ftype, confidence, stopCod)

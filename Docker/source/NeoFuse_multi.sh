@@ -3,7 +3,7 @@
 BLACKLIST=/usr/local/bin/genomes/blacklist_hg38_GRCh38_2018-11-04.tsv.gz
 OPTIREF=/usr/local/bin/OptiType-1.3.2/data/hla_reference_rna.fasta
 Optitype=/usr/local/bin/OptiType-1.3.2/OptiTypePipeline.py
-
+YARAIDX=/usr/local/bin/yara_idx/hla_reference_rna
 OUTDIR=$PWD
 declare -i PEPMAX
 declare -i PEPMIN
@@ -15,9 +15,11 @@ RAMLIMIT=0
 THRESHOLD=""
 RANK=""
 CONF="L"
+CUSTOMLIST="false"
+KEEPBAM="false"
 NETMHCPAN="false"
 
-while getopts "i:o::m::M::n::t::T::c::s::g::a::r::N::l::" opt;
+while getopts "i:o::m::M::n::t::T::c::s::g::a::r::C::N::l::k::" opt;
 do
 	case $opt in
 	i)	IN="$OPTARG";;
@@ -34,11 +36,14 @@ do
 	N)	NETMHCPAN="$OPTARG";;
 	r)	REALOUT="$OPTARG";;
 	l)	RAMLIMIT="$OPTARG";;
+	C)	CUSTOMLIST="$OPTARG";;
+	k)	KEEPBAM="$OPTARG";;
+	N)	NETMHCPAN="$OPTARG";;
 	esac
 done
 
 # check if MHCflurry models exist
-if [ ! -d "~/.local/share/mhcflurry/4/1.2.0/models_class1/" ]; then
+if [ ! -d "~/.local/share/mhcflurry/4/2.0.0/models_class1/" ]; then
 	mhcflurry-downloads fetch &> /dev/null
 fi
 
@@ -229,39 +234,41 @@ do
 
 		samtools index ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam
 
-		# RazerS3 + Optitype
-		## RazerS
-		echo " RazerS3 Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
-		razers3 --percent-identity 95 --max-hits 1 --distance-range 0 -tc $RAZERTHREADS --output $TEMPDIROPTI$FILE"_1.bam" $OPTIREF $READ1 > $LOGSDIR$FILE.razer1.log 2>&1 &
-		razers3 --percent-identity 95 --max-hits 1 --distance-range 0 -tc $RAZERTHREADS --output $TEMPDIROPTI$FILE"_2.bam" $OPTIREF $READ2 > $LOGSDIR$FILE.razer2.log 2>&1
-		wait
-		if [ `echo $?` != 0 ]; then
-			echo "An error occured during RazerS3 run, check $REALOUT/$FILE/LOGS/$FILE.razer{1,2}.log for more details"
+		if [ "$CUSTOMLIST" != "false" ]; then
+			echo " Parsing custom HLA list:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+			python3 /usr/local/bin/source/custom_hla_parser.py --custom_list $CUSTOMLIST --output_dir ${OUTDIROPTI}"/" --sample_name $FILE
 		else
-			:
+			# YARA + OptiType
+			## YARA
+			echo " YARA Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+			yara_mapper --version-check 0 -e 3 -t $CORES -f bam $YARAIDX $READ1  $READ2 | \
+    	        samtools view -@ $CORES -h -F 4 -b1 -o $TEMPDIROPTI"/"$FILE"_mapped_1.bam"
+			# mkfifo R1 R2
+			# yara_mapper --version-check 0 -e 3 -t $CORES -f bam $YARAIDX $READ1  $READ2 | \
+			# samtools view -@ $CORES -h -F 4 -b1 | tee R1 R2 > /dev/null &
+			# samtools view -@ $CORES -h -f 0x40 -b1 R1 > $TEMPDIROPTI"/"$FILE"_mapped_1.bam" &
+			# samtools view -@ $CORES -h -f 0x80 -b1 R2 > $TEMPDIROPTI"/"$FILE"_mapped_2.bam" &
+			# wait
+			# rm -f R1 R2
+			## Optitype
+			echo " OptiType Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+			python $Optitype -i $TEMPDIROPTI"/"$FILE"_mapped_1.bam" \
+				--rna -v -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
+			# python $Optitype -i $TEMPDIROPTI$FILE"_mapped_1.bam" $TEMPDIROPTI$FILE"_mapped_2.bam" -e 1 -b 0.009 -v --rna -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
+			if [ `echo $?` != 0 ]; then
+				echo "An error occured during OptiType run, check $REALOUT/$FILE/LOGS/$FILE.optitype.log for more details"
+				exit 1
+			else
+				:
+			fi
+			## Save output and remove temporary files
+			OutFile1=${OUTDIROPTI}$FILE"_HLA_Optitype.txt"
+			OutFile2=${OUTDIROPTI}$FILE"_coverage_plot.pdf"
+			tmpFile=`ls ${TEMPDIROPTI}/*/*result.tsv`
+			pdfFile=`ls ${TEMPDIROPTI}/*/*_coverage_plot.pdf`
+			mv $pdfFile $OutFile2
+			tail -1 $tmpFile | cut -f 2-7 | tr "\t" "\n" | sort | uniq > $OutFile1
 		fi
-		samtools bam2fq -@ $CORES $TEMPDIROPTI$FILE"_1.bam" > $TEMPDIROPTI$FILE"_1_HLA.fq"
-		samtools bam2fq -@ $CORES $TEMPDIROPTI$FILE"_2.bam" > $TEMPDIROPTI$FILE"_2_HLA.fq"
-		
-		## Optitype
-		echo " OptiType Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
-		python $Optitype -i $TEMPDIROPTI$FILE"_1_HLA.fq" $TEMPDIROPTI$FILE"_2_HLA.fq" \
-			--rna -v -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
-		# python $Optitype -i $TEMPDIROPTI$FILE"_mapped_1.bam" $TEMPDIROPTI$FILE"_mapped_2.bam" -e 1 -b 0.009 -v -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
-		if [ `echo $?` != 0 ]; then
-			echo "An error occured during OptiType run, check $REALOUT/$FILE/LOGS/$FILE.optitype.log for more details"
-			exit 1
-		else
-			:
-		fi
-		## Save output and remove temporary files
-		OutFile1=${OUTDIROPTI}"/"$FILE"_HLA_Optitype.txt"
-		OutFile2=${OUTDIROPTI}"/"$FILE"_coverage_plot.pdf"
-		tmpFile=`ls ${TEMPDIROPTI}/*/*result.tsv`
-		pdfFile=`ls ${TEMPDIROPTI}/*/*_coverage_plot.pdf`
-		mv $pdfFile $OutFile2
-		tail -1 $tmpFile | cut -f 2-7 | tr "\t" "\n" | sort | uniq > $OutFile1 &
-		rm -rf $TEMPDIROPTI
 
 		# Asign Reads to features (featureCounts)
 		echo " featureCounts Run started at: "`date +"%T"` | sed "s/^/[NeoFuse] /"
@@ -325,36 +332,35 @@ do
 
 		samtools index ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam
 
-		# RazerS3 + OptiType
-		echo " RazerS3 Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
-		razers3 --percent-identity 95 --max-hits 1 --distance-range 0 -tc $CORES --output $TEMPDIROPTI$FILE"_1.bam" $OPTIREF $READ1 > $LOGSDIR$FILE.razer.log 2>&1
-		if [ `echo $?` != 0 ]; then
-			echo "An error occured during RazerS3 run, check $REALOUT/$FILE/LOGS/$FILE.razer.log for more details"
+		if [ "$CUSTOMLIST" != "false" ]; then
+			echo " Parsing custom HLA list:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+			python3 /usr/local/bin/source/custom_hla_parser.py --custom_list $CUSTOMLIST --output_dir ${OUTDIROPTI}"/" --sample_name $FILE
 		else
-			:
+			# YARA + OptiType
+			## YARA
+			echo " YARA Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+			yara_mapper --version-check 0 -e 3 -t $CORES -f bam $YARAIDX $READ1 | \
+    	        samtools view -@ $CORES -h -F 4 -b1 -o $TEMPDIROPTI"/"$FILE"_mapped_1.bam"
+			## Optitype
+			echo " OptiType Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+			python $Optitype -i $TEMPDIROPTI"/"$FILE"_mapped_1.bam" \
+				--rna -v -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
+			# python $Optitype -i $TEMPDIROPTI$FILE"_mapped_1.bam" $TEMPDIROPTI$FILE"_mapped_2.bam" -e 1 -b 0.009 -v --rna -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
+			if [ `echo $?` != 0 ]; then
+				echo "An error occured during OptiType run, check $REALOUT/$FILE/LOGS/$FILE.optitype.log for more details"
+				exit 1
+			else
+				:
+			fi
+			## Save output and remove temporary files
+			OutFile1=${OUTDIROPTI}$FILE"_HLA_Optitype.txt"
+			OutFile2=${OUTDIROPTI}$FILE"_coverage_plot.pdf"
+			tmpFile=`ls ${TEMPDIROPTI}/*/*result.tsv`
+			pdfFile=`ls ${TEMPDIROPTI}/*/*_coverage_plot.pdf`
+			mv $pdfFile $OutFile2
+			tail -1 $tmpFile | cut -f 2-7 | tr "\t" "\n" | sort | uniq > $OutFile1
 		fi
-		samtools bam2fq -@ $CORES $TEMPDIROPTI$FILE"_1.bam" > $TEMPDIROPTI$FILE"_1_HLA.fq"
 		
-		## Optitype
-		echo " OptiType Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
-		python $Optitype -i $TEMPDIROPTI$FILE"_1_HLA.fq" \
-			--rna -v -o $TEMPDIROPTI > $OUTDIROPTI$FILE.optitype.log 2>&1
-		# python $Optitype -i $TEMPDIROPTI$FILE"_mapped_1.bam" -e 1 -b 0.009 --rna-o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
-		if [ `echo $?` != 0 ]; then
-			echo "An error occured during OptiType run, check $REALOUT/$FILE/LOGS/$FILE.optitype.log for more details"
-			exit 1
-		else
-			:
-		fi
-		## Save output and remove temporary files
-		OutFile1=${OUTDIROPTI}"/"$FILE"_HLA_Optitype.txt"
-		OutFile2=${OUTDIROPTI}"/"$FILE"_coverage_plot.pdf"
-		tmpFile=`ls ${TEMPDIROPTI}/*/*result.tsv`
-		pdfFile=`ls ${TEMPDIROPTI}/*/*_coverage_plot.pdf`
-		mv $pdfFile $OutFile2
-		tail -1 $tmpFile | cut -f 2-7 | tr "\t" "\n" | sort | uniq > $OutFile1 &
-		rm -rf $TEMPDIROPTI
-
 		# Asign Reads to features (featureCounts)
 		echo " featureCounts Run started at: "`date +"%T"` | sed "s/^/[NeoFuse] /"
 		featureCounts -t exon -T $CORES \
@@ -479,7 +485,7 @@ do
 		done
 	fi
 	
-	echo "Fusion	Gene1	Gene2	HLA_type	Fusion_Peptide	IC50	Rank	Event_Type	Stop_Codon	Confidence" > $FINALOUTDIR$FILE"_unfiltered.tsv"
+	echo "Fusion	Gene1	Gene2	Breakpoint1	Breakpoint2	HLA_type	Fusion_Peptide	IC50	Rank	Event_Type	Stop_Codon	Confidence" > $FINALOUTDIR$FILE"_unfiltered.tsv"
 	for file in $FINALTMP$FILE*_final.tsv; do
 		cat $file | sed 1d >> $FINALOUTDIR$FILE"_unfiltered.tsv"
 	done
@@ -503,11 +509,23 @@ do
 	fi
 	## Clean up
 	echo " Removing Intermediate Files:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+	if [ "$CUSTOMLIST" != "false" ]; then
+		mkdir -p $OUTDIR"Custom_HLAs/"
+		mv ${OUTDIROPTI}"/"$FILE"_HLA_Optitype.txt" $OUTDIR"Custom_HLAs/"$FILE"_custom_HLA_I.txt"
+		mv ${OUTDIROPTI}"/"$FILE"_custom_HLA_II.txt" $OUTDIR"Custom_HLAs/"
+		rm -rf ${OUTDIROPTI}
+	else
+		rm -rf $TEMPDIROPTI
+	fi
 	rm $FINALOUTDIR$FILE"_tmp_filtered.tsv"
 	rm $OUTDIRARRIBA$FILE".Log.progress.out"
 	rm $OUTDIRARRIBA$FILE".SJ.out.tab"
 	mv $OUTDIRARRIBA$FILE".Log."* $LOGSDIR
-	rm -rf $OUTDIRALIGN
+	if [ "$KEEPBAM" == "false" ]; then
+		rm -rf $OUTDIR"/STAR/"
+	else
+		:
+	fi
 	rm -rf $OUTDIRCOUNTS
 	rm -rf $OUTDIRRPKM
 	rm -rf $OUTDIRCLEAVEPEP

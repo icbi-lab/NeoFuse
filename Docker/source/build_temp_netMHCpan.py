@@ -7,6 +7,8 @@ def final_out(infileAssoc, outfile):
 	files=[]
 	gene1=[]
 	gene2=[]
+	bkpoint1=[]
+	bkpoint2=[]
 	ftype=[]
 	confidence=[]
 	stopCod=[]
@@ -22,16 +24,18 @@ def final_out(infileAssoc, outfile):
 			files.append(line.split("#")[1])
 			ftype.append(line.split("#")[2])
 			confidence.append(line.split("#")[3])
-			stopCod.append(line.split("#")[4].replace("\n", ""))
+			stopCod.append(line.split("#")[4])
+			bkpoint1.append(line.split("#")[5])
+			bkpoint2.append(line.split("#")[6].replace("\n", ""))
 	in_file.close()
 
 	with open(outfile, "+w") as out_file:
-		out_file.write("Fusion\tGene1\tGene2\tHLA_Type\tFusion_Peptide\tnetMHCpan_IC50\tnetMHCpan_Rank\tEvent_Type\tStop_Codon\tConfidence\n")
+		out_file.write("Fusion\tGene1\tGene2\tBreakpoint1\tBreakpoint2\tHLA_Type\tFusion_Peptide\tnetMHCpan_IC50\tnetMHCpan_Rank\tEvent_Type\tStop_Codon\tConfidence\n")
 		for file in files:
 			with open(file) as in_file:
 				for row in in_file:
 					if row.startswith("    "):
-						out_file.write(fGene[i].replace("_", "-")+"\t"+gene1[i]+"\t"+gene2[i]+"\t"+row.split()[1]+"\t"+row.split()[2]+"\t"+row.split()[12]+"\t"+row.split()[13]+"\t"+ftype[i]+"\t"+stopCod[i]+"\t"+confidence[i]+"\n")
+						out_file.write(fGene[i].replace("_", "-")+"\t"+gene1[i]+"\t"+gene2[i]+"\t"+bkpoint1[i]+"\t"+bkpoint2[i]+"\t"+row.split()[1]+"\t"+row.split()[2]+"\t"+row.split()[12]+"\t"+row.split()[13]+"\t"+ftype[i]+"\t"+stopCod[i]+"\t"+confidence[i]+"\n")
 				i+=1
 			in_file.close()
 	out_file.close()

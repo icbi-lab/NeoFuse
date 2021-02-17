@@ -3,7 +3,7 @@ import argparse, sys
 import csv
 
 # Function to retrieve fusion gene names, peptide sequences and confidence level
-def seek_fusePep(xenoInFile, fusionGene, peps, ftype, confidence, stopCod):
+def seek_fusePep(xenoInFile, fusionGene, bkpoint1, bkpoint2, peps, ftype, confidence, stopCod):
 	with open(xenoInFile) as in_file:
 		for line in in_file:
 			gene1 = line.split("#", 1)[0].split("\t", 1)[0].split(" - ")[0]
@@ -11,11 +11,13 @@ def seek_fusePep(xenoInFile, fusionGene, peps, ftype, confidence, stopCod):
 			fgene = f"{gene1}_{gene2}"
 			fusionGene.append(fgene)
 			peps.append(line.split("#", 1)[0].split("\t", 1)[1].replace("\t", " ").upper())
-			ftype.append(line.split("#", 2)[1])
+			ftype.append(line.split("#")[1])
 			confidence.append(line.split("#")[2])
-			stopCod.append(line.split("#")[3].replace("\n", ""))
+			stopCod.append(line.split("#")[3])
+			bkpoint1.append(line.split("#")[4])
+			bkpoint2.append(line.split("#")[5].replace("\n", ""))
 	in_file.close()
-	return fusionGene, peps, ftype, confidence, stopCod
+	return fusionGene, bkpoint1, bkpoint2, peps, ftype, confidence, stopCod
 
 # Function to retrive HLAs predicted by OptiType
 def seek_hla(optiInFile, outDir, hla):
@@ -41,7 +43,7 @@ def seek_hla(optiInFile, outDir, hla):
 	return hla
 
 # Function to build the associations and Mhcflurry run intermidiate files
-def tmp_out_pep(xenoInFile, tmpOutFile1, tmpOutFile2, outDir, fGenes, peptides, hla, ftype, confidence, stopCod, cores):
+def tmp_out_pep(xenoInFile, tmpOutFile1, tmpOutFile2, outDir, fGenes, bkpoint1, bkpoint2, peptides, hla, ftype, confidence, stopCod, cores):
 	gene_file=[]
 	counter=2 # used for parallelizing mhcflurry jobs
 	fileID=1 # used in printing fusion gene names and corresponding peptide sequences at the MHCFlurry run file
@@ -59,11 +61,11 @@ def tmp_out_pep(xenoInFile, tmpOutFile1, tmpOutFile2, outDir, fGenes, peptides, 
 			if not hla: # check if there are supported by MHCFlurry HLAs
 				pass
 			else:
-				gene_file.append(fGene[i]+"#"+out+"#"+ftype[i]+"#"+confidence[i]+"#"+stopCod[i]) #get the lines for the associations file
+				gene_file.append(fGene[i]+"#"+out+"#"+ftype[i]+"#"+confidence[i]+"#"+stopCod[i]+"#"+bkpoint1[i]+"#"+bkpoint2[i]) #get the lines for the associations file
 				if counter <= cores:
-					out_file.write('''mhcflurry-predict --alleles %s --peptides %s --out %s &\n''' % (hla, peptides[i], out))
+					out_file.write('''mhcflurry-predict --affinity-only --alleles %s --peptides %s --out %s --models /home/neofuse/.local/share/mhcflurry/4/2.0.0/models_class1/models &\n''' % (hla, peptides[i], out))
 				else:
-					out_file.write('''mhcflurry-predict --alleles %s --peptides %s --out %s &\n''' % (hla, peptides[i], out))
+					out_file.write('''mhcflurry-predict --affinity-only --alleles %s --peptides %s --out %s --models /home/neofuse/.local/share/mhcflurry/4/2.0.0/models_class1/models &\n''' % (hla, peptides[i], out))
 					out_file.write("wait\n")
 					counter = 1
 			counter += 1
@@ -84,6 +86,8 @@ if __name__ == "__main__":
 	parser.add_argument('-c','--cores', help='Number of cores', type=int, required=False)
 	args = parser.parse_args()
 	fGene=[]
+	bkpoint1 = []
+	bkpoint2 = []
 	peps=[]
 	ftype=[]
 	confidence=[]
@@ -96,7 +100,7 @@ if __name__ == "__main__":
 	outFile1 = outDir+"_TEST_OUT.sh"
 	outFile2 = outDir+"_ASSOCIATIONS_OUT.txt"
 
-	seek_fusePep(xenoFile, fGene, peps, ftype, confidence, stopCod)
+	seek_fusePep(xenoFile, fGene, bkpoint1, bkpoint2, peps, ftype, confidence, stopCod)
 	hla = seek_hla(optiInFile, outDir, hla)
 
-	tmp_out_pep(xenoFile, outFile1, outFile2, outDir, fGene, peps, hla, ftype, confidence, stopCod, cores)
+	tmp_out_pep(xenoFile, outFile1, outFile2, outDir, fGene, bkpoint1, bkpoint2, peps, hla, ftype, confidence, stopCod, cores)
