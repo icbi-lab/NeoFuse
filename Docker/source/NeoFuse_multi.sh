@@ -70,7 +70,7 @@ then
 	REALOUT=$OUTDIR
 fi
 
-if test -z "$IN" 
+if test -z "$IN"
 then
 	echo "usage: NeoFuse_multi -i <input> -o [output] -m [peptide min length] -M [peptide Max length] -n [cores] -c [confidence level] -t [affinity threshold] -s <STAR index> -g <FASTA file> -a <GTF file>"
 	echo "You must specify an input file"
@@ -133,7 +133,7 @@ else
 	else
 		STARTHREADS=$((($CORES -1) / 2))
 		ARRIBATHREADS=$((($CORES -1) / 2))
-		RAZERTHREADS=$((($CORES -1) / 2)) 
+		RAZERTHREADS=$((($CORES -1) / 2))
 	fi
 fi
 
@@ -198,9 +198,13 @@ do
 		--readFilesIn $READ1 $READ2 $ZIPPED \
 		--outFileNamePrefix $OUTDIRALIGN$FILE"." \
 		--genomeLoad NoSharedMemory \
-		--limitBAMsortRAM $RAMLIMIT \
 		--outReadsUnmapped Fastx \
-		--outSAMtype BAM SortedByCoordinate > $LOGSDIR$FILE.STAR.log 2>$LOGSDIR$FILE.STAR.err &
+		--outStd BAM_Unsorted \
+		--outBAMcompression 0 \
+		--outSAMtype BAM Unsorted 2>$LOGSDIR$FILE.STAR.err |
+			samtools sort -@ $SAMTOOLSTHREADS -O BAM -o ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam /dev/stdin \
+			> $LOGSDIR$FILE.samtools.log 2>$LOGSDIR$FILE.samtools.err &
+		mv Log.std.out $LOGSDIR$FILE.STAR.log
 
 		# Arriba
 		echo " Arriba Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
@@ -277,7 +281,7 @@ do
 			-a $ANNOTATION \
 			-o $OUTDIRCOUNTS$FILE.counts.txt \
 			$OUTDIRALIGN$FILE.Aligned.sortedByCoord.out.bam > $LOGSDIR$FILE.featureCounts.log 2>&1
-		
+
 		if [ `echo $?` != 0 ]; then
 			echo "An error occured during featureCounts run, check $REALOUT/$FILE/LOGS/$FILE.featureCounts.log for more details"
 			exit 1
@@ -296,9 +300,13 @@ do
 		--readFilesIn $READ1 $ZIPPED \
 		--outFileNamePrefix $OUTDIRALIGN$FILE"." \
 		--genomeLoad NoSharedMemory \
-		--limitBAMsortRAM $RAMLIMIT \
 		--outReadsUnmapped Fastx \
-		--outSAMtype BAM SortedByCoordinate > $LOGSDIR$FILE.STAR.log 2>$LOGSDIR$FILE.STAR.err &
+		--outStd BAM_Unsorted \
+		--outBAMcompression 0 \
+		--outSAMtype BAM Unsorted 2>$LOGSDIR$FILE.STAR.err |
+			samtools sort -@ $SAMTOOLSTHREADS -O BAM -o ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam /dev/stdin \
+			> $LOGSDIR$FILE.samtools.log 2>$LOGSDIR$FILE.samtools.err &
+		mv Log.std.out $LOGSDIR$FILE.STAR.log
 
 		# Arriba
 		echo " Arriba Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
@@ -360,7 +368,7 @@ do
 			mv $pdfFile $OutFile2
 			tail -1 $tmpFile | cut -f 2-7 | tr "\t" "\n" | sort | uniq > $OutFile1
 		fi
-		
+
 		# Asign Reads to features (featureCounts)
 		echo " featureCounts Run started at: "`date +"%T"` | sed "s/^/[NeoFuse] /"
 		featureCounts -t exon -T $CORES \
@@ -484,7 +492,7 @@ do
 			fi
 		done
 	fi
-	
+
 	echo "Fusion	Gene1	Gene2	Breakpoint1	Breakpoint2	HLA_type	Fusion_Peptide	IC50	Rank	Event_Type	Stop_Codon	Confidence" > $FINALOUTDIR$FILE"_unfiltered.tsv"
 	for file in $FINALTMP$FILE*_final.tsv; do
 		cat $file | sed 1d >> $FINALOUTDIR$FILE"_unfiltered.tsv"
