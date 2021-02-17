@@ -216,7 +216,7 @@ if test -f "$READ2"; then
 	else
 		:
 	fi
-	mv Log.std.out $LOGSDIR$FILE.STAR.log
+	mv $OUTDIRALIGN$FILE.Log.std.out $LOGSDIR$FILE.STAR.log
 	samtools index ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam
 
 	if [ "$CUSTOMLIST" != "false" ]; then
@@ -316,7 +316,7 @@ else
 	else
 		:
 	fi
-
+	mv $OUTDIRALIGN$FILE.Log.std.out $LOGSDIR$FILE.STAR.log
 	samtools index ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam
 
 	if [ "$CUSTOMLIST" != "false" ]; then

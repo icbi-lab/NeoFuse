@@ -235,7 +235,7 @@ do
 		else
 			:
 		fi
-		mv Log.std.out $LOGSDIR$FILE.STAR.log
+		mv $OUTDIRALIGN$FILE.Log.std.out $LOGSDIR$FILE.STAR.log
 		samtools index ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam
 
 		if [ "$CUSTOMLIST" != "false" ]; then
@@ -306,7 +306,6 @@ do
 		--outSAMtype BAM Unsorted 2>$LOGSDIR$FILE.STAR.err |
 			samtools sort -@ $SAMTOOLSTHREADS -O BAM -o ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam /dev/stdin \
 			> $LOGSDIR$FILE.samtools.log 2>$LOGSDIR$FILE.samtools.err &
-		mv Log.std.out $LOGSDIR$FILE.STAR.log
 
 		# Arriba
 		echo " Arriba Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
@@ -337,7 +336,7 @@ do
 		else
 			:
 		fi
-
+		mv $OUTDIRALIGN$FILE.Log.std.out $LOGSDIR$FILE.STAR.log
 		samtools index ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam
 
 		if [ "$CUSTOMLIST" != "false" ]; then
