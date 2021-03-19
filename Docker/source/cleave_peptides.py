@@ -135,10 +135,11 @@ def window_onslaught(
                     )  # Cut the part of gene 1 that doesn't span the junction
                     seq3 = seq[splitat:].replace("|", "")
                     peps = rolling_window(seq3, winSize)
-                    if "?" in pep:
-                        pass
-                    else:
-                        peptides.append(pep)
+                    for pep in peps:
+                        if "?" in pep:
+                            pass
+                        else:
+                            peptides.append(pep)
                     if not peptides:
                         pass
                     else:
