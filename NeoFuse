@@ -30,8 +30,10 @@ BUILDREF="false"
 VERSION="GRCh38"
 CUSTOMLIST="false"
 KEEPBAM="false"
+FUSIONFILE="false"
+ARRIBAFILTERS="false"
 
-while getopts ":1::2::d::i::o::m::M::n::t::T::c::s::g::a::l::C::-::N::kBRV::h" opt;
+while getopts ":1::2::d::i::o::m::M::n::t::T::c::s::g::a::l::C::-::N::K::f::kBRV::h" opt;
 do
 	case $opt in
 	1)	READ1="$OPTARG";;
@@ -56,12 +58,14 @@ do
 	B)	BUILD="true";;
 	R)	BUILDREF="true";;
 	V)	VERSION="$OPTARG";;
+	K)	FUSIONFILE="$OPTARG";;
+	f)	ARRIBAFILTERS="$OPTARG";;
 	h)	HELP="true";;
 	esac
 done
 if [ "$BUILD" == "false" ]; then
 	if [ "$READ1" == "" ] && [ "$IN" == "" ] && [ "$BUILDREF" == "false" ] || [ "$HELP" == "true" ]; then
-		echo "NeoFuse v1.1.1
+		echo "NeoFuse v1.1.2
 	Usage: NeoFuse <arguments> [options]
 
 	<Arguments>
@@ -89,6 +93,8 @@ if [ "$BUILD" == "false" ]; then
 	-C: Custom HLA I list (TXT file containing custom HLA I types)
 	-k: Keep STAR output (BAM files)
 	-l: int>=0:  maximum available RAM (bytes) for sorting BAM
+	-K: File containing known/recurrent fusions (see arriba manual for more details)
+	-f: Comma separated list of arriba filters to disable (no spaces allowed, see arriba manual for more details)
 
 	--singularity: NeoFuse will use the Singularity image
 	--docker: NeoFuse will use the Docker image
@@ -213,6 +219,16 @@ if [ "$BUILD" == "false" ]; then
 		fi
 	fi
 
+	if [ "$FUSIONFILE" != "false" ]; then
+		if test $FUSIONFILE; then
+			FUSIONFILE=`realpath2 $FUSIONFILE`
+		else
+			echo "No known fusions file found"
+			echo "Exiting ..."
+			exit 1
+		fi
+	fi
+
 	mkdir -p $OUTDIR
 	OUTDIR=`realpath2 $OUTDIR`
 	STARINDEX=`realpath2 $STARINDEX`
@@ -253,6 +269,12 @@ if [ "$BUILD" == "false" ]; then
 				SMOUNT="-B $INDIR:/mnt/data,$IN:/mnt/$(echo ${IN##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
 				DMOUNT="-v $INDIR:/mnt/data -v $IN:/mnt/$(echo ${IN##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
 			fi
+			if [ "$FUSIONFILE" == "false" ]; then
+				:
+			else
+				SMOUNT=$SMOUNT",$FUSIONFILE:/mnt/$(echo ${FUSIONFILE##*/})"
+				DMOUNT=$DMOUNT" -v $FUSIONFILE:/mnt/$(echo ${FUSIONFILE##*/})"
+			fi
 			if [ "$NETMHCPAN" == "false" ]; then
 				:
 			else
@@ -269,6 +291,12 @@ if [ "$BUILD" == "false" ]; then
 			else
 				SMOUNT="-B $READ1:/mnt/data/$(echo ${READ1##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
 				DMOUNT="-v $READ1:/mnt/data/$(echo ${READ1##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
+			fi
+			if [ "$FUSIONFILE" == "false" ]; then
+				:
+			else
+				SMOUNT=$SMOUNT",$FUSIONFILE:/mnt/$(echo ${FUSIONFILE##*/})"
+				DMOUNT=$DMOUNT" -v $FUSIONFILE:/mnt/$(echo ${FUSIONFILE##*/})"
 			fi
 			if [ "$NETMHCPAN" == "false" ]; then
 				:	
@@ -295,6 +323,11 @@ if [ "$BUILD" == "false" ]; then
 		else
 			:
 		fi
+		if [ "$FUSIONFILE" != "false" ]; then
+			FUSIONFILE="/mnt/$(echo ${FUSIONFILE##*/})"
+		else
+			:
+		fi
 		if [ "$NETMHCPAN" == "false" ]; then
 			:
 		else
@@ -305,12 +338,12 @@ if [ "$BUILD" == "false" ]; then
 		if [ "$IMAGE" == "docker" ]; then
 			if [ -x "$(command -v docker)" ]; then
 				if [ "$IN" != "" ]; then
-					docker run --rm $DMOUNT icbi/neofuse NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM
+					docker run --rm $DMOUNT icbi/neofuse NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM -K $FUSIONFILE -f $ARRIBAFILTERS
 				elif [ "$READ1" != "" ]; then
 					if [ "$READ2" == "" ]; then
-						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM
+						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM -K $FUSIONFILE -f $ARRIBAFILTERS
 					else
-						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM
+						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM -K $FUSIONFILE -f $ARRIBAFILTERS
 					fi
 				else
 					echo "Invalid arguments"
@@ -334,12 +367,12 @@ if [ "$BUILD" == "false" ]; then
 					exit 1
 				fi
 				if [ "$IN" != "" ]; then
-					singularity exec --no-home $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM
+					singularity exec --no-home $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM -K $FUSIONFILE -f $ARRIBAFILTERS
 				elif [ "$READ1" != "" ]; then
 					if [ "$READ2" == "" ]; then
-						singularity exec --no-home $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM
+						singularity exec --no-home $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM -K $FUSIONFILE -f $ARRIBAFILTERS
 					else
-						singularity exec --no-home $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -T $RANK -t $THRESHOLD -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM
+						singularity exec --no-home $SMOUNT $DIR"/NeoFuse.sif" NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -T $RANK -t $THRESHOLD -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM -K $FUSIONFILE -f $ARRIBAFILTERS
 					fi
 				else
 					echo "Invalid arguments"

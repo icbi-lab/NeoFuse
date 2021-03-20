@@ -17,9 +17,11 @@ RANK=""
 CONF="L"
 CUSTOMLIST="false"
 KEEPBAM="false"
+FUSIONFILE="false"
+ARRIBAFILTERS="false"
 NETMHCPAN="false"
 
-while getopts "i:o::m::M::n::t::T::c::s::g::a::r::C::N::l::k::" opt;
+while getopts "i:o::m::M::n::t::T::c::s::g::a::r::C::N::l::k::K::f::" opt;
 do
 	case $opt in
 	i)	IN="$OPTARG";;
@@ -38,6 +40,8 @@ do
 	l)	RAMLIMIT="$OPTARG";;
 	C)	CUSTOMLIST="$OPTARG";;
 	k)	KEEPBAM="$OPTARG";;
+	K)	FUSIONFILE="$OPTARG";;
+	f)	ARRIBAFILTERS="$OPTARG";;
 	N)	NETMHCPAN="$OPTARG";;
 	esac
 done
@@ -64,6 +68,26 @@ do
 done < $IN
 
 # process args
+if [ "$FUSIONFILE" != "false" ]
+	then
+	if test -z "$FUSIONFILE"
+	then
+		echo "Known Fusions file not found"
+		echo "Exiting..."
+		exit 1
+	else
+		FUSIONFILEOPT="-k ${FUSIONFILE}"
+	fi
+else
+	FUSIONFILEOPT=""
+fi
+
+if [ "$ARRIBAFILTERS" != "false" ]
+	then
+	ARRFILT="-f $ARRIBAFILTERS"
+else
+	ARRFILT=""
+fi
 
 if test -z "$REALOUT"
 then
@@ -221,7 +245,7 @@ do
 		-x /dev/stdin \
 		-o $OUTDIRARRIBA$FILE.fusions.tsv -O $OUTDIRARRIBA$FILE.fusions.discarded.tsv \
 		-a $GENOMEDIR -g $ANNOTATION -b $BLACKLIST \
-		-T -P > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
+		-T -P $FUSIONFILEOPT $FUSIONFILEOPT > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
 		if [ `echo $?` != 0 ]; then
 			echo "An error occured during STAR/Arriba run, check the log files in $REALOUT/$FILE/LOGS/ for more details"
 			exit 1
@@ -322,7 +346,7 @@ do
 		-x /dev/stdin \
 		-o $OUTDIRARRIBA$FILE.fusions.tsv -O $OUTDIRARRIBA$FILE.fusions.discarded.tsv \
 		-a $GENOMEDIR -g $ANNOTATION -b $BLACKLIST \
-		-T -P > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
+		-T -P $FUSIONFILEOPT $FUSIONFILEOPT > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
 		if [ `echo $?` != 0 ]; then
 			echo "An error occured during STAR/Arriba run, check the log files in $REALOUT/$FILE/LOGS/ for more details"
 			exit 1
@@ -367,11 +391,7 @@ do
 			mv $pdfFile $OutFile2
 			tail -1 $tmpFile | cut -f 2-7 | tr "\t" "\n" | sort | uniq > $OutFile1
 		fi
-<<<<<<< HEAD
-		
-=======
 
->>>>>>> c0625b6e43efb01d4dfafc8ad3c31e04ab669e8c
 		# Asign Reads to features (featureCounts)
 		echo " featureCounts Run started at: "`date +"%T"` | sed "s/^/[NeoFuse] /"
 		featureCounts -t exon -T $CORES \
@@ -495,11 +515,7 @@ do
 			fi
 		done
 	fi
-<<<<<<< HEAD
-	
-=======
 
->>>>>>> c0625b6e43efb01d4dfafc8ad3c31e04ab669e8c
 	echo "Fusion	Gene1	Gene2	Breakpoint1	Breakpoint2	HLA_type	Fusion_Peptide	IC50	Rank	Event_Type	Stop_Codon	Confidence" > $FINALOUTDIR$FILE"_unfiltered.tsv"
 	for file in $FINALTMP$FILE*_final.tsv; do
 		cat $file | sed 1d >> $FINALOUTDIR$FILE"_unfiltered.tsv"

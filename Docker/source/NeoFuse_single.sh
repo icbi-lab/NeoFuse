@@ -17,9 +17,11 @@ RANK=""
 CONF="L"
 CUSTOMLIST="false"
 KEEPBAM="false"
+FUSIONFILE="false"
+ARRIBAFILTERS="false"
 NETMHCPAN="false"
 
-while getopts "1:2::d::o::m::M::n::t::T::c::s::g::a::r::C::N::l::k::" opt;
+while getopts "1:2::d::o::m::M::n::t::T::c::s::g::a::r::C::N::l::k::K::f::" opt;
 do
 	case $opt in
 	1)	READ1="$OPTARG";;
@@ -39,6 +41,8 @@ do
 	l)	RAMLIMIT="$OPTARG";;
 	C)	CUSTOMLIST="$OPTARG";;
 	k)	KEEPBAM="$OPTARG";;
+	K)	FUSIONFILE="$OPTARG";;
+	f)	ARRIBAFILTERS="$OPTARG";;
 	N)	NETMHCPAN="$OPTARG";;
 	esac
 done
@@ -49,6 +53,28 @@ if [ ! -d "~/.local/share/mhcflurry/4/2.0.0/models_class1/" ]; then
 fi
 
 # process args
+if [ "$FUSIONFILE" != "false" ]
+	then
+	if test -z "$FUSIONFILE"
+	then
+		echo "Known Fusions file not found"
+		echo "Exiting..."
+		exit 1
+	else
+		FUSIONFILEOPT="-k ${FUSIONFILE}"
+	fi
+else
+	FUSIONFILEOPT=""
+fi
+
+if [ "$ARRIBAFILTERS" != "false" ]
+	then
+	ARRFILT="-f ${ARRIBAFILTERS}"
+	echo ${ARRIBAFILTERS}
+else
+	ARRFILT=""
+fi
+
 if test -z "$REALOUT"
 then
 	REALOUT=$OUTDIR
@@ -202,7 +228,7 @@ if test -f "$READ2"; then
 	-x /dev/stdin \
 	-o $OUTDIRARRIBA$FILE.fusions.tsv -O $OUTDIRARRIBA$FILE.fusions.discarded.tsv \
 	-a $GENOMEDIR -g $ANNOTATION -b $BLACKLIST \
-	-T -P > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
+	-T -P $FUSIONFILEOPT $ARRFILT > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
 	if [ `echo $?` != 0 ]; then
 		echo "An error occured during STAR/Arriba run, check the log files in $REALOUT/$FILE/LOGS/ for more details"
 		exit 1
@@ -302,7 +328,7 @@ else
 		-x /dev/stdin \
 		-o $OUTDIRARRIBA$FILE.fusions.tsv -O $OUTDIRARRIBA$FILE.fusions.discarded.tsv \
 		-a $GENOMEDIR -g $ANNOTATION -b $BLACKLIST \
-		-T -P > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
+		-T -P $FUSIONFILEOPT $ARRFILT > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
 	if [ `echo $?` != 0 ]; then
 		echo "An error occured during STAR/Arriba run, check the log files in $REALOUT/$FILE/LOGS/$FILE for more details"
 		exit 1
