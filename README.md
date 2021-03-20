@@ -124,6 +124,10 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 
 **-l:** int>=0:  maximum available RAM (bytes) for sorting BAM **
 
+**-K:** File containing known/recurrent fusions (see arriba manual for more details) **
+
+**-f:** Comma separated list of arriba filters to disable (do not use space separeted lists, see arriba manual for more details) **
+
 **--singularity:** NeoFuse will use the Singularity image
 
 **--docker:** NeoFuse will use the Docker image
@@ -192,6 +196,10 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 **-k:** Keep STAR output (BAM files) **
 
 **-l:** int>=0:  maximum available RAM (bytes) for sorting BAM **
+
+**-K:** File containing known/recurrent fusions (see arriba manual for more details) **
+
+**-f:** Comma separated list of arriba filters to disable (do not use spaces, see arriba manual for more details) **
 
 **--singularity:** NeoFuse will use the Singularity image
 
