@@ -1,3 +1,0 @@
-OptiRef	/usr/local/bioinf/optiType/OptiType-master-20171212/data/hla_reference_rna.fasta
-Optitype	/usr/local/bioinf/optiType/OptiType-master-20171212/OptiTypePipeline.py
-arriba	/usr/local/bioinf/arriba/arriba_v1.1.0/arriba
