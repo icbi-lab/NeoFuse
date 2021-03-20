@@ -118,6 +118,12 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 
 **-c:** Mimimum confidence score (values: H, M, or L; default: L) **
 
+**-C:** Custom HLA I list (TXT file containing custom HLA I types) **
+
+**-k:** Keep STAR output (BAM files) **
+
+**-l:** int>=0:  maximum available RAM (bytes) for sorting BAM **
+
 **--singularity:** NeoFuse will use the Singularity image
 
 **--docker:** NeoFuse will use the Docker image
@@ -180,6 +186,12 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 **-T:** Percentile rank threshold (default: Inf)
 
 **-c:** Mimimum confidence score (values: H, M, or L; default: L) **
+
+**-C:** Custom HLA I list (TXT file containing custom HLA I types) **
+
+**-k:** Keep STAR output (BAM files) **
+
+**-l:** int>=0:  maximum available RAM (bytes) for sorting BAM **
 
 **--singularity:** NeoFuse will use the Singularity image
 
