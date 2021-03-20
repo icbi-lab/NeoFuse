@@ -61,7 +61,8 @@ do
 done
 if [ "$BUILD" == "false" ]; then
 	if [ "$READ1" == "" ] && [ "$IN" == "" ] && [ "$BUILDREF" == "false" ] || [ "$HELP" == "true" ]; then
-		echo "Usage: NeoFuse <arguments> [options]
+		echo "NeoFuse v1.1.1
+	Usage: NeoFuse <arguments> [options]
 
 	<Arguments>
 
@@ -73,7 +74,6 @@ if [ "$BUILD" == "false" ]; then
 	-a: Path to annotation GTF file
 	-o: Output directory (default: "./")
 	-d: Run ID (default: input filename)
-
 	-B: Build singularity/docker image
 	-R: Build indexes
 	-V: Genome version (currently supported: GRCh38 or GRCh37, default: "GRCh38")
@@ -88,6 +88,7 @@ if [ "$BUILD" == "false" ]; then
 	-c: Mimimum confidence score (H, M or L; default: L)
 	-C: Custom HLA I list (TXT file containing custom HLA I types)
 	-k: Keep STAR output
+	-l: int>=0:  maximum available RAM (bytes) for sorting BAM
 
 	--singularity: NeoFuse will use the Singularity image
 	--docker: NeoFuse will use the Docker image
