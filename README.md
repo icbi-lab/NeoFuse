@@ -118,15 +118,15 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 
 **-c:** Mimimum confidence score (values: H, M, or L; default: L) **
 
-**-C:** Custom HLA I list (TXT file containing custom HLA I types) **
+**-C:** Custom HLA I list (TXT file containing custom HLA I types)
 
 **-k:** Keep STAR output (BAM files) **
 
-**-l:** int>=0:  maximum available RAM (bytes) for sorting BAM **
+**-l:** int>=0:  maximum available RAM (bytes) for sorting BAM
 
-**-K:** File containing known/recurrent fusions (see arriba manual for more details) **
+**-K:** File containing known/recurrent fusions (see arriba manual for more details)
 
-**-f:** Comma separated list of arriba filters to disable (do not use space separeted lists, see arriba manual for more details) **
+**-f:** Comma separated list of arriba filters to disable (do not use space separeted lists, see arriba manual for more details)
 
 **--singularity:** NeoFuse will use the Singularity image
 
@@ -191,15 +191,15 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 
 **-c:** Mimimum confidence score (values: H, M, or L; default: L) **
 
-**-C:** Custom HLA I list (TXT file containing custom HLA I types) **
+**-C:** Custom HLA I list (TXT file containing custom HLA I types)
 
-**-k:** Keep STAR output (BAM files) **
+**-k:** Keep STAR output (BAM files)
 
-**-l:** int>=0:  maximum available RAM (bytes) for sorting BAM **
+**-l:** int>=0:  maximum available RAM (bytes) for sorting BAM
 
-**-K:** File containing known/recurrent fusions (see arriba manual for more details) **
+**-K:** File containing known/recurrent fusions (see arriba manual for more details)
 
-**-f:** Comma separated list of arriba filters to disable (do not use spaces, see arriba manual for more details) **
+**-f:** Comma separated list of arriba filters to disable (do not use spaces, see arriba manual for more details)
 
 **--singularity:** NeoFuse will use the Singularity image
 
