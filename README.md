@@ -120,7 +120,7 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 
 **-C:** Custom HLA I list (TXT file containing custom HLA I types)
 
-**-k:** Keep STAR output (BAM files) **
+**-k:** Keep STAR output (BAM files)
 
 **-l:** int>=0:  maximum available RAM (bytes) for sorting BAM
 
