@@ -31,7 +31,7 @@ $ git clone https://github.com/icbi-lab/NeoFuse.git
 ```
 
 
-Or you can find the script freely available [here](https://icbi.i-med.ac.at/software/NeoFuse/downloads/NeoFuse-v1.1.1.zip) (depricated).
+Or you can find the script freely available [here](https://icbi.i-med.ac.at/software/NeoFuse/downloads/NeoFuse-v1.1.1.zip) (deprecated).
 
 Add NeoFuse to PATH:
 
