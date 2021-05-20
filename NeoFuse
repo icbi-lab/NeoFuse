@@ -231,7 +231,7 @@ if [ "$BUILD" == "false" ]; then
 			VARIANTSFILE=`realpath2 $VARIANTSFILE`
 			MOUNTPOINT=",$VARIANTSFILE:/mnt/$(echo ${VARIANTSFILE##*/})"
 		else
-			echo "No Structural variant calls from WGS found"
+			echo "No Structural variant calls from WGS file found"
 			echo "Exiting ..."
 			exit 1
 		fi
@@ -353,6 +353,11 @@ if [ "$BUILD" == "false" ]; then
 			:
 		else
 			NETMHCPAN="/usr/local/bin/source/$(echo ${NETMHCPAN##*/})"
+		fi
+		if [ "$VARIANTSFILE" != "false" ]; then
+			VARIANTSFILE="/mnt/$(echo ${VARIANTSFILE##*/})"
+		else
+			:
 		fi
 
 		## Check for Docker/singularity installation and launch
