@@ -25,10 +25,15 @@ NeoFuse can be installed through the following four steps.
 
 [Instructions for Singularity installation](https://sylabs.io/docs/)
 
-### 1.2. Download the NeoFuse script
-The script is freely available [here](https://icbi.i-med.ac.at/software/NeoFuse/downloads/NeoFuse-v1.1.1.zip).
+### 1.2. Clone the NeoFuse repo locally
+```
+$ git clone https://github.com/icbi-lab/NeoFuse.git
+```
 
-Unzip the archive and add it to PATH:
+
+Or you can find the script freely available [here](https://icbi.i-med.ac.at/software/NeoFuse/downloads/NeoFuse-v1.1.1.zip) (depricated).
+
+Add NeoFuse to PATH:
 
 ```
 $ export PATH=$PATH:~/path/to/NeoFuse
@@ -127,6 +132,10 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 **-K:** File containing known/recurrent fusions (see arriba manual for more details)
 
 **-f:** Comma separated list of arriba filters to disable (do not use space separeted lists, see arriba manual for more details)
+
+**-v:** Tab-separated file with coordinates of structural variants found using whole-genome sequencing data (The file may be gzip-compressed, for more info refer to arriba manual)
+
+**-S:** Determines how far a genomic breakpoint may be away from a transcriptomic breakpoint to still consider it as a related event (used with -v parameter - Default = 100000).
 
 **--singularity:** NeoFuse will use the Singularity image
 

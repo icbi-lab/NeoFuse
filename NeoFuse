@@ -21,6 +21,8 @@ declare -i CORES
 CORES=1
 declare -i RAMLIMIT
 RAMLIMIT=0
+declare -i GENEBREAK
+GENEBREAK=100000
 THRESHOLD=""
 RANK=""
 CONF="L"
@@ -30,10 +32,11 @@ BUILDREF="false"
 VERSION="GRCh38"
 CUSTOMLIST="false"
 KEEPBAM="false"
+VARIANTSFILE="false"
 FUSIONFILE="false"
 ARRIBAFILTERS="false"
 
-while getopts ":1::2::d::i::o::m::M::n::t::T::c::s::g::a::l::C::-::N::K::f::kBRV::h" opt;
+while getopts ":1::2::d::i::o::m::M::n::t::T::c::s::g::a::l::C::v::S::-::N::K::f::kBRV::h" opt;
 do
 	case $opt in
 	1)	READ1="$OPTARG";;
@@ -54,6 +57,8 @@ do
 	l)	RAMLIMIT="$OPTARG";;
 	C)	CUSTOMLIST="$OPTARG";;
 	k)	KEEPBAM="$OPTARG";;
+	v)	VARIANTSFILE="$OPTARG";;
+	S)	GENEBREAK="$OPTARG";;
 	-)	IMAGE="$OPTARG";;
 	B)	BUILD="true";;
 	R)	BUILDREF="true";;
@@ -65,7 +70,7 @@ do
 done
 if [ "$BUILD" == "false" ]; then
 	if [ "$READ1" == "" ] && [ "$IN" == "" ] && [ "$BUILDREF" == "false" ] || [ "$HELP" == "true" ]; then
-		echo "NeoFuse v1.1.2
+		echo "NeoFuse v1.1.3
 	Usage: NeoFuse <arguments> [options]
 
 	<Arguments>
@@ -95,6 +100,8 @@ if [ "$BUILD" == "false" ]; then
 	-l: int>=0:  maximum available RAM (bytes) for sorting BAM
 	-K: File containing known/recurrent fusions (see arriba manual for more details)
 	-f: Comma separated list of arriba filters to disable (no spaces allowed, see arriba manual for more details)
+	-v: Tab-separated or VCF file with coordinates of structural variants found using whole-genome sequencing data
+	-S: Determines how far a genomic breakpoint may be away from a transcriptomic breakpoint to still consider it as a related event (default: 100000)
 
 	--singularity: NeoFuse will use the Singularity image
 	--docker: NeoFuse will use the Docker image
@@ -210,7 +217,7 @@ if [ "$BUILD" == "false" ]; then
 	fi
 
 	if [ "$CUSTOMLIST" != "false" ]; then
-		if test $CUSTOMLIST; then
+		if test -f $CUSTOMLIST; then
 			CUSTOMLIST=`realpath2 $CUSTOMLIST`
 		else
 			echo "No custom HLA I list found"
@@ -218,6 +225,20 @@ if [ "$BUILD" == "false" ]; then
 			exit 1
 		fi
 	fi
+
+	if [ "$VARIANTSFILE" != "false" ]; then
+		if test -f $VARIANTSFILE; then
+			VARIANTSFILE=`realpath2 $VARIANTSFILE`
+			MOUNTPOINT=",$VARIANTSFILE:/mnt/$(echo ${VARIANTSFILE##*/})"
+		else
+			echo "No Structural variant calls from WGS found"
+			echo "Exiting ..."
+			exit 1
+		fi
+	else
+		MOUNTPOINT=""
+	fi
+
 
 	if [ "$FUSIONFILE" != "false" ]; then
 		if test $FUSIONFILE; then
@@ -263,11 +284,11 @@ if [ "$BUILD" == "false" ]; then
 			sed -i "s%$INDIR%/mnt/data%g" $IN
 			INDIR=`realpath2 $INDIR`
 			if [ "$CUSTOMLIST" != "false" ]; then
-				SMOUNT="-B $INDIR:/mnt/data,$IN:/mnt/$(echo ${IN##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/}),$CUSTOMLIST:/mnt/$(echo ${CUSTOMLIST##*/})"
-				DMOUNT="-v $INDIR:/mnt/data -v $IN:/mnt/$(echo ${IN##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/}) -v $CUSTOMLIST:/mnt/$(echo ${CUSTOMLIST##*/})"
+				SMOUNT="-B $INDIR:/mnt/data,$IN:/mnt/$(echo ${IN##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/}),$CUSTOMLIST:/mnt/$(echo ${CUSTOMLIST##*/})$MOUNTPOINT"
+				DMOUNT="-v $INDIR:/mnt/data -v $IN:/mnt/$(echo ${IN##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/}) -v $CUSTOMLIST:/mnt/$(echo ${CUSTOMLIST##*/})$MOUNTPOINT"
 			else
-				SMOUNT="-B $INDIR:/mnt/data,$IN:/mnt/$(echo ${IN##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
-				DMOUNT="-v $INDIR:/mnt/data -v $IN:/mnt/$(echo ${IN##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
+				SMOUNT="-B $INDIR:/mnt/data,$IN:/mnt/$(echo ${IN##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})$MOUNTPOINT"
+				DMOUNT="-v $INDIR:/mnt/data -v $IN:/mnt/$(echo ${IN##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})$MOUNTPOINT"
 			fi
 			if [ "$FUSIONFILE" == "false" ]; then
 				:
@@ -286,11 +307,11 @@ if [ "$BUILD" == "false" ]; then
 
 		if [ "$READ1" != "" ]; then
 			if [ "$CUSTOMLIST" != "false" ]; then
-				SMOUNT="-B $READ1:/mnt/data/$(echo ${READ1##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/}),$CUSTOMLIST:/mnt/$(echo ${CUSTOMLIST##*/})"
-				DMOUNT="-v $READ1:/mnt/data/$(echo ${READ1##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/}) -v $CUSTOMLIST:/mnt/$(echo ${CUSTOMLIST##*/})"
+				SMOUNT="-B $READ1:/mnt/data/$(echo ${READ1##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/}),$CUSTOMLIST:/mnt/$(echo ${CUSTOMLIST##*/})$MOUNTPOINT"
+				DMOUNT="-v $READ1:/mnt/data/$(echo ${READ1##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/}) -v $CUSTOMLIST:/mnt/$(echo ${CUSTOMLIST##*/})$MOUNTPOINT"
 			else
-				SMOUNT="-B $READ1:/mnt/data/$(echo ${READ1##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
-				DMOUNT="-v $READ1:/mnt/data/$(echo ${READ1##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})"
+				SMOUNT="-B $READ1:/mnt/data/$(echo ${READ1##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})$MOUNTPOINT"
+				DMOUNT="-v $READ1:/mnt/data/$(echo ${READ1##*/}) -v $OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}) -v $STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}) -v $GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}) -v $ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/})$MOUNTPOINT"
 			fi
 			if [ "$FUSIONFILE" == "false" ]; then
 				:
@@ -338,12 +359,12 @@ if [ "$BUILD" == "false" ]; then
 		if [ "$IMAGE" == "docker" ]; then
 			if [ -x "$(command -v docker)" ]; then
 				if [ "$IN" != "" ]; then
-					docker run --rm $DMOUNT icbi/neofuse NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM -K $FUSIONFILE -f $ARRIBAFILTERS
+					docker run --rm $DMOUNT icbi/neofuse NeoFuse_multi -i $IN -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM -K $FUSIONFILE -f $ARRIBAFILTERS -v $VARIANTSFILE -S $GENEBREAK
 				elif [ "$READ1" != "" ]; then
 					if [ "$READ2" == "" ]; then
-						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM -K $FUSIONFILE -f $ARRIBAFILTERS
+						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM -K $FUSIONFILE -f $ARRIBAFILTERS -v $VARIANTSFILE -S $GENEBREAK
 					else
-						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM -K $FUSIONFILE -f $ARRIBAFILTERS
+						docker run --rm $DMOUNT icbi/neofuse NeoFuse_single -1 $READ1 -2 $READ2 -d $ID -o $OUTDIR -m $PEPMIN -M $PEPMAX -n $CORES -t $THRESHOLD -T $RANK -c $CONF -s $STARINDEX -g $GENOMEDIR -a $ANNOTATION -N $NETMHCPAN -l $RAMLIMIT -r $REALOUT -C $CUSTOMLIST -k $KEEPBAM -K $FUSIONFILE -f $ARRIBAFILTERS -v $VARIANTSFILE -S $GENEBREAK
 					fi
 				else
 					echo "Invalid arguments"

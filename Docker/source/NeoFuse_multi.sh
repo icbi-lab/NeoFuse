@@ -12,6 +12,8 @@ declare -i CORES
 CORES=1
 declare -i RAMLIMIT
 RAMLIMIT=0
+declare -i GENEBREAK
+GENEBREAK=100000
 THRESHOLD=""
 RANK=""
 CONF="L"
@@ -21,7 +23,7 @@ FUSIONFILE="false"
 ARRIBAFILTERS="false"
 NETMHCPAN="false"
 
-while getopts "i:o::m::M::n::t::T::c::s::g::a::r::C::N::l::k::K::f::" opt;
+while getopts "i:o::m::M::n::t::T::c::s::g::a::r::C::N::l::k::v::S::K::f::" opt;
 do
 	case $opt in
 	i)	IN="$OPTARG";;
@@ -40,6 +42,8 @@ do
 	l)	RAMLIMIT="$OPTARG";;
 	C)	CUSTOMLIST="$OPTARG";;
 	k)	KEEPBAM="$OPTARG";;
+	v)	VARIANTSFILE="$OPTARG";;
+	S)	GENEBREAK="$OPTARG";;
 	K)	FUSIONFILE="$OPTARG";;
 	f)	ARRIBAFILTERS="$OPTARG";;
 	N)	NETMHCPAN="$OPTARG";;
@@ -161,6 +165,20 @@ else
 	fi
 fi
 
+# Check if user provided variants file
+if [ "$VARIANTSFILE" == "false" ]; then
+	:
+else
+	if test -f $VARIANTSFILE; then
+		VARF="-d ${VARIANTSFILE}"
+		GENB="-D ${GENEBREAK}"
+	else
+		echo "No Structural variant calls file found"
+		echo "Exiting ..."
+		exit 1
+	fi
+fi
+
 # Read the TSV file, skip 1st line, get vars
 ## Process each pair of reads
 sed 1d $OUTDIR"/in.tsv" | while read -r id read1 read2
@@ -245,7 +263,7 @@ do
 		-x /dev/stdin \
 		-o $OUTDIRARRIBA$FILE.fusions.tsv -O $OUTDIRARRIBA$FILE.fusions.discarded.tsv \
 		-a $GENOMEDIR -g $ANNOTATION -b $BLACKLIST \
-		-T -P $FUSIONFILEOPT $FUSIONFILEOPT > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
+		-T -P $FUSIONFILEOPT $FUSIONFILEOPT $VARF $GENB > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
 		if [ `echo $?` != 0 ]; then
 			echo "An error occured during STAR/Arriba run, check the log files in $REALOUT/$FILE/LOGS/ for more details"
 			exit 1
@@ -346,7 +364,7 @@ do
 		-x /dev/stdin \
 		-o $OUTDIRARRIBA$FILE.fusions.tsv -O $OUTDIRARRIBA$FILE.fusions.discarded.tsv \
 		-a $GENOMEDIR -g $ANNOTATION -b $BLACKLIST \
-		-T -P $FUSIONFILEOPT $FUSIONFILEOPT > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
+		-T -P $FUSIONFILEOPT $FUSIONFILEOPT $VARF $GENB > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
 		if [ `echo $?` != 0 ]; then
 			echo "An error occured during STAR/Arriba run, check the log files in $REALOUT/$FILE/LOGS/ for more details"
 			exit 1
