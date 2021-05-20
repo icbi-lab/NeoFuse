@@ -129,11 +129,11 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 
 **-l:** int>=0:  maximum available RAM (bytes) for sorting BAM
 
-**-K:** File containing known/recurrent fusions (see arriba manual for more details)
+**-K:** File containing known/recurrent fusions (see [arriba manual](https://arriba.readthedocs.io/en/latest/input-files/#known-fusions) for more details)
 
-**-f:** Comma separated list of arriba filters to disable (do not use space separeted lists, see arriba manual for more details)
+**-f:** Comma separated list of arriba filters to disable (do not use space separeted lists, see [arriba manual](https://arriba.readthedocs.io/en/latest/command-line-options/) for more details)
 
-**-v:** VCF or Tab-separated file with coordinates of structural variants found using whole-genome sequencing data (The file may be gzip-compressed, for more info refer to arriba manual)
+**-v:** VCF or Tab-separated file with coordinates of structural variants found using whole-genome sequencing data (The file may be gzip-compressed, for more info refer to [arriba manual](https://arriba.readthedocs.io/en/latest/input-files/#structural-variant-calls-from-wgs))
 
 **-S:** Determines how far a genomic breakpoint may be away from a transcriptomic breakpoint to still consider it as a related event (used with -v parameter - Default = 100000)
 
@@ -206,11 +206,11 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 
 **-l:** int>=0:  maximum available RAM (bytes) for sorting BAM
 
-**-K:** File containing known/recurrent fusions (see arriba manual for more details)
+**-K:** File containing known/recurrent fusions (see [arriba manual](https://arriba.readthedocs.io/en/latest/input-files/#known-fusions) for more details)
 
-**-f:** Comma separated list of arriba filters to disable (do not use spaces, see arriba manual for more details)
+**-f:** Comma separated list of arriba filters to disable (do not use space separeted lists, see [arriba manual](https://arriba.readthedocs.io/en/latest/command-line-options/) for more details)
 
-**-v:** VCF or Tab-separated file with coordinates of structural variants found using whole-genome sequencing data (The file may be gzip-compressed, for more info refer to arriba manual)
+**-v:** VCF or Tab-separated file with coordinates of structural variants found using whole-genome sequencing data (The file may be gzip-compressed, for more info refer to [arriba manual](https://arriba.readthedocs.io/en/latest/input-files/#structural-variant-calls-from-wgs))
 
 **-S:** Determines how far a genomic breakpoint may be away from a transcriptomic breakpoint to still consider it as a related event (used with -v parameter - Default = 100000)
 
