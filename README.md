@@ -30,7 +30,6 @@ NeoFuse can be installed through the following four steps.
 $ git clone https://github.com/icbi-lab/NeoFuse.git
 ```
 
-
 Or you can find the script freely available [here](https://icbi.i-med.ac.at/software/NeoFuse/downloads/NeoFuse-v1.1.1.zip) (deprecated).
 
 Add NeoFuse to PATH:
@@ -129,11 +128,11 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 
 **-l:** int>=0:  maximum available RAM (bytes) for sorting BAM
 
-**-K:** File containing known/recurrent fusions (see [arriba manual](https://arriba.readthedocs.io/en/latest/input-files/#known-fusions) for more details)
+**-K:** File containing known/recurrent fusions (see [Arriba manual](https://arriba.readthedocs.io/en/latest/input-files/#known-fusions) for more details)
 
-**-f:** Comma separated list of arriba filters to disable (do not use space separeted lists, see [arriba manual](https://arriba.readthedocs.io/en/latest/command-line-options/) for more details)
+**-f:** Comma separated list of Arriba filters to disable (do not use space separeted lists, see [Arriba manual](https://arriba.readthedocs.io/en/latest/command-line-options/) for more details)
 
-**-v:** VCF or Tab-separated file with coordinates of structural variants found using whole-genome sequencing data (The file may be gzip-compressed, for more info refer to [arriba manual](https://arriba.readthedocs.io/en/latest/input-files/#structural-variant-calls-from-wgs))
+**-v:** VCF or Tab-separated file with coordinates of structural variants found using whole-genome sequencing data (The file may be gzip-compressed, for more info refer to [Arriba manual](https://arriba.readthedocs.io/en/latest/input-files/#structural-variant-calls-from-wgs))
 
 **-S:** Determines how far a genomic breakpoint may be away from a transcriptomic breakpoint to still consider it as a related event (used with -v parameter - Default = 100000)
 
@@ -206,11 +205,11 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 
 **-l:** int>=0:  maximum available RAM (bytes) for sorting BAM
 
-**-K:** File containing known/recurrent fusions (see [arriba manual](https://arriba.readthedocs.io/en/latest/input-files/#known-fusions) for more details)
+**-K:** File containing known/recurrent fusions (see [Arriba manual](https://arriba.readthedocs.io/en/latest/input-files/#known-fusions) for more details)
 
-**-f:** Comma separated list of arriba filters to disable (do not use space separeted lists, see [arriba manual](https://arriba.readthedocs.io/en/latest/command-line-options/) for more details)
+**-f:** Comma separated list of Arriba filters to disable (do not use space separeted lists, see [Arriba manual](https://arriba.readthedocs.io/en/latest/command-line-options/) for more details)
 
-**-v:** VCF or Tab-separated file with coordinates of structural variants found using whole-genome sequencing data (The file may be gzip-compressed, for more info refer to [arriba manual](https://arriba.readthedocs.io/en/latest/input-files/#structural-variant-calls-from-wgs))
+**-v:** VCF or Tab-separated file with coordinates of structural variants found using whole-genome sequencing data (The file may be gzip-compressed, for more info refer to [Arriba manual](https://arriba.readthedocs.io/en/latest/input-files/#structural-variant-calls-from-wgs))
 
 **-S:** Determines how far a genomic breakpoint may be away from a transcriptomic breakpoint to still consider it as a related event (used with -v parameter - Default = 100000)
 
@@ -321,12 +320,8 @@ Contains the **final output** of the pipeline, which consists of three files:
 ```
 /NeoFuse
 ├── Sample1_filtered.tsv
-├── Sample1_unfiltered.tsv
-└── Sample1_unsupported.txt
+└── Sample1_unfiltered.tsv
 ```
-
-Sample_unsupported.txt contains the HLA types predicted by OptiType that are not supported by MHCflurry.
-**Note:** if netMHCpan is used instead of MHCfurry, this file is **not** generated.
 
 Sample_unfiltered.tsv contains all the predicted fusion peptides and their annotations.
 
@@ -335,13 +330,10 @@ This file reports for each putative neoantigen: confidence score, binding HLA ty
 Example format:
 
 ```
-Fusion	Gene1	Gene2	HLA_Type	Fusion_Peptide	IC50	Rank	Event_Type	Stop_Codon	Confidence	Gene1_TPM	Gene2_TPM	Avg_TPM	HLA_TPM
-BCAS4-BCAS3	BCAS4	BCAS3	HLA-A*02:01	FLTPDPGAEV	51.07703105715209	0.3441249999999996	Fusion-out-of-frame	yes	high	29.07	219.64	124.35	22.40
-RSBN1-AP4B1-AS1	RSBN1	AP4B1-AS1	HLA-A*02:01	STLEAPLAPA	372.5722360454703	1.3481250000000005	Fusion-out-of-frame	no	high	15.99	5.10	10.54	22.40
-PPM1D-USP32	PPM1D	USP32	HLA-B*44:02	LEMGSPYVAQ	361.06034776084135	0.7239999999999998	Fusion-out-of-frame	no	high	129.58	178.94	154.26	28.59
-TXLNG-SYAP1	TXLNG	SYAP1	HLA-A*02:01	KTIYLTLHLL	281.7035889624228	1.1387500000000002	Fusion-out-of-frame	yes	low	21.70	46.29	33.99	22.40
-NAV1-GPR37L1	NAV1	GPR37L1	HLA-A*02:01	RLSASVPWAL	18.46819203380198	0.11887500000000008	Fusion-out-of-frame	no	low	0.89	2.89	1.89	22.40
-NAV1-GPR37L1	NAV1	GPR37L1	HLA-A*02:01	RLSASVPWAL	18.46819203380198	0.11887500000000008	Fusion-out-of-frame	no	low	0.89	2.89	1.89	22.40
+Fusion	Gene1	Gene2	Breakpoint1	Breakpoint2	Split_Reads1	Split_Reads2	Discordant_Reads	Closest_Breakpoint1	Closest_Breakpoint2	HLA_Type	Fusion_Peptide	IC50	Rank	Event_Type	Stop_Codon	Confidence	Gene1_TPM	Gene2_TPM	Avg_TPM	HLA_TPM
+SETD2-ELP6	SETD2	ELP6	chr3:47056821	chr3:47504448	11	19	30	chr3:47053118(3703)	chr3:47053118(3703)	HLA-B*35:02	TPPIVQGVSL	337.8201495211543	0.16212499999999996	Fusion	no	high	37.73	34.87	36.30	1296.32
+SETD2-ELP6	SETD2	ELP6	chr3:47056821	chr3:47504448	11	19	30	chr3:47053118(3703)	chr3:47053118(3703)	HLA-B*35:08	TPPIVQGVSL	174.1196814867352	0.4007499999999997	Fusion	no	high	37.73	34.87	36.30	1296.32
+NPAS3-ABHD4	NPAS3	ABHD4	chr14:33215587	chr14:22603390	2	2	32	.	.	HLA-B*35:08	TPCEGLQNKF	71.80709202149346	0.13862500000000008	Fusion	no	high	3.45	136.77	70.11	1296.32
 ```
 
 ## 4. References

@@ -230,9 +230,9 @@ do
 	if test -f "$READ2"; then
 		echo "[-------------------------------- [NeoFuse] --------------------------------]"
 		echo
-		echo " Paired End (PE) Reads detected: commencing processing" | sed "s/^/[NeoFuse] /"
-		echo " Processing files $NAME1 - $NAME2" | sed "s/^/[NeoFuse] /"
-		echo " STAR Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+		echo " Paired End (PE) Reads detected: commencing processing" | sed "s/^/[`date +"%T"`] /"
+		echo " Processing files $NAME1 - $NAME2" | sed "s/^/[`date +"%T"`] /"
+		echo " STAR Run started" | sed "s/^/[`date +"%T"`] /"
 		# STAR
 		STAR --runThreadN $STARTHREADS \
 		--runMode alignReads \
@@ -249,7 +249,7 @@ do
 		
 
 		# Arriba
-		echo " Arriba Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+		echo " Arriba Run started" | sed "s/^/[`date +"%T"`] /"
 		STAR --runThreadN $ARRIBATHREADS \
 		--genomeDir $STARINDEX --genomeLoad NoSharedMemory --limitBAMsortRAM $RAMLIMIT \
 		--readFilesIn $READ1 $READ2 $ZIPPED \
@@ -262,8 +262,7 @@ do
 		arriba \
 		-x /dev/stdin \
 		-o $OUTDIRARRIBA$FILE.fusions.tsv -O $OUTDIRARRIBA$FILE.fusions.discarded.tsv \
-		-a $GENOMEDIR -g $ANNOTATION -b $BLACKLIST \
-		-T -P $FUSIONFILEOPT $FUSIONFILEOPT $VARF $GENB > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
+		-a $GENOMEDIR -g $ANNOTATION -b $BLACKLIST $FUSIONFILEOPT $FUSIONFILEOPT $VARF $GENB > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
 		if [ `echo $?` != 0 ]; then
 			echo "An error occured during STAR/Arriba run, check the log files in $REALOUT/$FILE/LOGS/ for more details"
 			exit 1
@@ -281,12 +280,12 @@ do
 		samtools index ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam
 
 		if [ "$CUSTOMLIST" != "false" ]; then
-			echo " Parsing custom HLA list:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+			echo " Parsing custom HLA list" | sed "s/^/[`date +"%T"`] /"
 			python3 /usr/local/bin/source/custom_hla_parser.py --custom_list $CUSTOMLIST --output_dir ${OUTDIROPTI}"/" --sample_name $FILE
 		else
 			# YARA + OptiType
 			## YARA
-			echo " YARA Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+			echo " YARA Run started" | sed "s/^/[`date +"%T"`] /"
 			yara_mapper --version-check 0 -e 3 -t $CORES -f bam $YARAIDX $READ1  $READ2 | \
     	        samtools view -@ $CORES -h -F 4 -b1 -o $TEMPDIROPTI"/"$FILE"_mapped_1.bam"
 			# mkfifo R1 R2
@@ -297,7 +296,7 @@ do
 			# wait
 			# rm -f R1 R2
 			## Optitype
-			echo " OptiType Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+			echo " OptiType Run started" | sed "s/^/[`date +"%T"`] /"
 			python $Optitype -i $TEMPDIROPTI"/"$FILE"_mapped_1.bam" \
 				--rna -v -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
 			# python $Optitype -i $TEMPDIROPTI$FILE"_mapped_1.bam" $TEMPDIROPTI$FILE"_mapped_2.bam" -e 1 -b 0.009 -v --rna -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
@@ -317,7 +316,7 @@ do
 		fi
 
 		# Asign Reads to features (featureCounts)
-		echo " featureCounts Run started at: "`date +"%T"` | sed "s/^/[NeoFuse] /"
+		echo " featureCounts Run started" | sed "s/^/[`date +"%T"`] /"
 		featureCounts -p -t exon -T $CORES \
 			-g gene_name \
 			-a $ANNOTATION \
@@ -333,9 +332,9 @@ do
 	else
 		echo "[-------------------------------- [NeoFuse] --------------------------------]"
 		echo
-		echo " Single End (SE) Reads detected: commencing processing" | sed "s/^/[NeoFuse] /"
-		echo " Processing file $NAME1" | sed "s/^/[NeoFuse] /"
-		echo " STAR Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+		echo " Single End (SE) Reads detected: commencing processing" | sed "s/^/[`date +"%T"`] /"
+		echo " Processing file $NAME1" | sed "s/^/[`date +"%T"`] /"
+		echo " STAR Run started" | sed "s/^/[`date +"%T"`] /"
 		STAR --runThreadN $STARTHREADS \
 		--runMode alignReads \
 		--genomeDir $STARINDEX \
@@ -350,7 +349,7 @@ do
 			> $LOGSDIR$FILE.samtools.log 2>$LOGSDIR$FILE.samtools.err &
 
 		# Arriba
-		echo " Arriba Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+		echo " Arriba Run started" | sed "s/^/[`date +"%T"`] /"
 		STAR --runThreadN $ARRIBATHREADS \
 		--genomeDir $STARINDEX --genomeLoad NoSharedMemory --limitBAMsortRAM $RAMLIMIT \
 		--readFilesIn $READ1 $ZIPPED \
@@ -363,8 +362,7 @@ do
 		arriba \
 		-x /dev/stdin \
 		-o $OUTDIRARRIBA$FILE.fusions.tsv -O $OUTDIRARRIBA$FILE.fusions.discarded.tsv \
-		-a $GENOMEDIR -g $ANNOTATION -b $BLACKLIST \
-		-T -P $FUSIONFILEOPT $FUSIONFILEOPT $VARF $GENB > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
+		-a $GENOMEDIR -g $ANNOTATION -b $BLACKLIST $FUSIONFILEOPT $FUSIONFILEOPT $VARF $GENB > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
 		if [ `echo $?` != 0 ]; then
 			echo "An error occured during STAR/Arriba run, check the log files in $REALOUT/$FILE/LOGS/ for more details"
 			exit 1
@@ -382,16 +380,16 @@ do
 		samtools index ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam
 
 		if [ "$CUSTOMLIST" != "false" ]; then
-			echo " Parsing custom HLA list:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+			echo " Parsing custom HLA list" | sed "s/^/[`date +"%T"`] /"
 			python3 /usr/local/bin/source/custom_hla_parser.py --custom_list $CUSTOMLIST --output_dir ${OUTDIROPTI}"/" --sample_name $FILE
 		else
 			# YARA + OptiType
 			## YARA
-			echo " YARA Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+			echo " YARA Run started" | sed "s/^/[`date +"%T"`] /"
 			yara_mapper --version-check 0 -e 3 -t $CORES -f bam $YARAIDX $READ1 | \
     	        samtools view -@ $CORES -h -F 4 -b1 -o $TEMPDIROPTI"/"$FILE"_mapped_1.bam"
 			## Optitype
-			echo " OptiType Run started at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+			echo " OptiType Run started at:" `date +"%T"` | sed "s/^/[`date +"%T"`] /"
 			python $Optitype -i $TEMPDIROPTI"/"$FILE"_mapped_1.bam" \
 				--rna -v -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
 			# python $Optitype -i $TEMPDIROPTI$FILE"_mapped_1.bam" $TEMPDIROPTI$FILE"_mapped_2.bam" -e 1 -b 0.009 -v --rna -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
@@ -411,7 +409,7 @@ do
 		fi
 
 		# Asign Reads to features (featureCounts)
-		echo " featureCounts Run started at: "`date +"%T"` | sed "s/^/[NeoFuse] /"
+		echo " featureCounts Run started" | sed "s/^/[`date +"%T"`] /"
 		featureCounts -t exon -T $CORES \
 			-g gene_name \
 			-a $ANNOTATION \
@@ -426,7 +424,7 @@ do
 	fi
 
 	# Convert raw counts to TPM/RPKM (Rscript)
-	echo " Converting Raw Counts to TPM and FPKM:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+	echo " Converting Raw Counts to TPM and FPKM" | sed "s/^/[`date +"%T"`] /"
 	Rscript /usr/local/bin/source/counts_to_tpm.R \
 		$OUTDIRCOUNTS$FILE.counts.txt \
 		$OUTDIRTPM$FILE.tpm.txt \
@@ -439,7 +437,7 @@ do
 		:
 	fi
 	# Cleave peptides
-	echo " Searching for peptides of length $PEPLEN:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+	echo " Searching for peptides of length $PEPLEN:" `date +"%T"` | sed "s/^/[`date +"%T"`] /"
 	python3 /usr/local/bin/source/cleave_peptides.py -i $OUTDIRARRIBA$FILE.fusions.tsv -o $OUTDIRCLEAVEPEP$FILE -p $PEPLEN > $LOGSDIR$FILE.cleave.log 2>&1
 	if [ `echo $?` != 0 ]; then
 		echo "An error occured while searching for peptides, check $REALOUT/$FILE/LOGS/$FILE.cleave_peptides.log for more details"
@@ -451,7 +449,7 @@ do
 	if [ "$NETMHCPAN" == "false" ]; then
 		# MHCFlurry and final output
 		## create the associations and run files
-		echo " MHCFlurry Run started at: "`date +"%T"` | sed "s/^/[NeoFuse] /"
+		echo " MHCFlurry Run started" | sed "s/^/[`date +"%T"`] /"
 		for filename in $OUTDIRCLEAVEPEP*.tsv; do
 			fou=$(echo ${filename##*/} | sed s/_xeno// | sed s/\.tsv//)
    			python3 /usr/local/bin/source/association.py -x $filename -l ${OUTDIROPTI}"/"$FILE"_HLA_Optitype.txt" -o $FINALTMP$fou -c $CORES > $LOGSDIR$FILE.association.log 2>&1
@@ -476,7 +474,7 @@ do
 		done
 		wait
 		sleep 30 # Extra time to release resources
-		echo " Creating Final Ouptut:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+		echo " Creating Final Ouptut" | sed "s/^/[`date +"%T"`] /"
 		for j in $PEPLEN; do
 			python3 /usr/local/bin/source/build_temp.py -a $FINALTMP*$j"_ASSOCIATIONS_OUT.txt" -o $FINALTMP$FILE"_"$j > $LOGSDIR$FILE.final.log 2>&1
 			if [ `echo $?` != 0 ]; then
@@ -487,9 +485,9 @@ do
 			fi
 		done
 
-		for file in $FINALTMP$FILE"_"*_unsupported.txt; do
-			cat $file > $FINALOUTDIR$FILE"_unsupported.txt"
-		done
+		# for file in $FINALTMP$FILE"_"*_unsupported.txt; do
+		# 	cat $file > $FINALOUTDIR$FILE"_unsupported.txt"
+		# done
 	else
 		# netMHCpan and final output
 		## export env paths
@@ -497,7 +495,7 @@ do
 		export NHOME=$NETMHCPAN
 		export NETMHCpan=$NETMHCPAN/Linux_x86_64
 		## create the association file and run files
-		echo " netMHCpan Run started at: "`date +"%T"` | sed "s/^/[NeoFuse] /"
+		echo " netMHCpan Run started" | sed "s/^/[`date +"%T"`] /"
 		for filename in $OUTDIRCLEAVEPEP*.tsv; do
 			fou=$(echo ${filename##*/} | sed s/_xeno// | sed s/\.tsv//)
    			python3 /usr/local/bin/source/association_netMHCpan.py -x $filename -l ${OUTDIROPTI}"/"$FILE"_HLA_Optitype.txt" -o $FINALTMP$fou -p $NETMHCPAN -c $CORES > $LOGSDIR$FILE.association.log 2>&1
@@ -522,7 +520,7 @@ do
 		done
 		wait
 		sleep 30 # Extra time to release resources
-		echo " Creating Final Ouptut:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+		echo " Creating Final Ouptut" | sed "s/^/[`date +"%T"`] /"
 		for j in $PEPLEN; do
 			python3 /usr/local/bin/source/build_temp_netMHCpan.py -a $FINALTMP*$j"_ASSOCIATIONS_OUT.txt" -o $FINALTMP$FILE"_"$j > $LOGSDIR$FILE.final.log 2>&1
 			if [ `echo $?` != 0 ]; then
@@ -557,7 +555,7 @@ do
 		:
 	fi
 	## Clean up
-	echo " Removing Intermediate Files:" `date +"%T"` | sed "s/^/[NeoFuse] /"
+	echo " Removing Intermediate Files" | sed "s/^/[`date +"%T"`] /"
 	if [ "$CUSTOMLIST" != "false" ]; then
 		mkdir -p $OUTDIR"Custom_HLAs/"
 		mv ${OUTDIROPTI}"/"$FILE"_HLA_Optitype.txt" $OUTDIR"Custom_HLAs/"$FILE"_custom_HLA_I.txt"
@@ -579,8 +577,8 @@ do
 	rm -rf $OUTDIRRPKM
 	rm -rf $OUTDIRCLEAVEPEP
 	rm -rf $FINALTMP
-	echo " The run has succesfully finished at:" `date +"%T"` | sed "s/^/[NeoFuse] /"
-	echo " All the results and log files can be found in $OUTDIR/$FILE/" | sed "s/^/[NeoFuse] /"
+	echo " The run has succesfully finished" | sed "s/^/[`date +"%T"`] /"
+	echo " All the results and log files can be found in $OUTDIR/$FILE/" | sed "s/^/[`date +"%T"`] /"
 	echo "[-------------------------------- [NeoFuse] --------------------------------]"
 	echo
 done

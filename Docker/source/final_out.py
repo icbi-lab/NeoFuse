@@ -1,26 +1,32 @@
 #!/usr/bin/python
 import argparse, sys
 import csv
+import pandas as pd
 
 def desperation(inFile1, inFile2, outFile):
-    gene=[]
-    tpm=[]
-    gene1tpm=[]
-    gene2tpm=[]
-    bkpoint1=[]
-    bkpoint2=[]
-    hlaTpm=[]
-    tpmAvg=[]
-    fusion=[]
-    fpep=[]
-    mIc=[]
-    mRank=[]
-    eveType=[]
-    stopCod=[]
-    arConf=[]
+    gene = []
+    tpm = []
+    gene1tpm = []
+    gene2tpm = []
+    bkpoint1 = []
+    bkpoint2 = []
+    split_read1 = []
+    split_read2 = []
+    disco_reads = []
+    closest_bkp1 = []
+    closest_bkp2 = []
+    hlaTpm = []
+    tpmAvg = []
+    fusion = []
+    fpep = []
+    mIc = []
+    mRank = []
+    eveType = []
+    stopCod = []
+    arConf = []
 
     with open(inFile1) as in_file:
-        csv_reader = csv.reader(in_file, delimiter='\t')
+        csv_reader = csv.reader(in_file, delimiter="\t")
         in_file.readline()
         for row in csv_reader:
             gene.append(row[0])
@@ -31,50 +37,110 @@ def desperation(inFile1, inFile2, outFile):
     in_file.close()
 
     with open(inFile2) as in_file:
-        csv_reader = csv.reader(in_file, delimiter='\t')
+        csv_reader = csv.reader(in_file, delimiter="\t")
         in_file.readline()
         for row in csv_reader:
             fusion.append(row[0])
             bkpoint1.append(row[3])
             bkpoint2.append(row[4])
-            fpep.append(row[6])
-            mIc.append(row[7])
-            mRank.append(row[8])
-            eveType.append(row[9])
-            stopCod.append(row[10])
-            arConf.append(row[11])
+            split_read1.append(row[5])
+            split_read2.append(row[6])
+            disco_reads.append(row[7])
+            closest_bkp1.append(row[8])
+            closest_bkp2.append(row[9])
+            fpep.append(row[11])
+            mIc.append(row[12])
+            mRank.append(row[13])
+            eveType.append(row[14])
+            stopCod.append(row[15])
+            arConf.append(row[16])
             if "," in row[1]:
-                gene1tpm.append(row[1]+"\t"+"NA")
+                gene1tpm.append(row[1] + "\t" + "NA")
             elif "," in row[2]:
-                gene2tpm.append(row[2]+"\t"+"NA")
+                gene2tpm.append(row[2] + "\t" + "NA")
             for i in range(0, len(tpm)):
                 if gene[i] == row[1].split("(")[0] and "," not in row[1]:
                     if tpm[i] == "NA":
-                        gene1tpm.append(row[1]+"\t"+tpm[i])
+                        gene1tpm.append(row[1] + "\t" + tpm[i])
                     elif tpm[i] != "NA":
-                        gene1tpm.append(row[1]+"\t"+"%.2f" % float(tpm[i]))
+                        gene1tpm.append(row[1] + "\t" + "%.2f" % float(tpm[i]))
                 if gene[i] == row[2].split("(")[0] and "," not in row[2]:
                     if tpm[i] == "NA":
-                        gene2tpm.append(row[2]+"\t"+tpm[i])
+                        gene2tpm.append(row[2] + "\t" + tpm[i])
                     elif tpm[i] != "NA":
-                        gene2tpm.append(row[2]+"\t"+"%.2f" % float(tpm[i]))
-                if gene[i] == row[5].split("*")[0]:
+                        gene2tpm.append(row[2] + "\t" + "%.2f" % float(tpm[i]))
+                if gene[i] == row[10].split("*")[0]:
                     if tpm[i] == "NA":
-                        hlaTpm.append(row[5]+"\t"+tpm[i])
+                        hlaTpm.append(row[10] + "\t" + tpm[i])
                     elif tpm[i] != "NA":
-                        hlaTpm.append(row[5]+"\t"+"%.2f" % float(tpm[i]))
+                        hlaTpm.append(row[10] + "\t" + "%.2f" % float(tpm[i]))
     in_file.close()
-    for i in  range(0, len(gene1tpm)):
+
+    for i in range(0, len(gene1tpm)):
         if "NA" in gene1tpm[i].split("\t")[1] or "NA" in gene2tpm[i].split("\t")[1]:
             tpmAvg.append("NA")
         else:
-            tpmAvg.append("%.2f" % float((float(gene1tpm[i].split("\t")[1])+float(gene2tpm[i].split("\t")[1]))/2.0))
+            tpmAvg.append(
+                "%.2f"
+                % float(
+                    (
+                        float(gene1tpm[i].split("\t")[1])
+                        + float(gene2tpm[i].split("\t")[1])
+                    )
+                    / 2.0
+                )
+            )
 
     with open(outFile, "+w") as out_file:
-        out_file.write("Fusion\tGene1\tGene2\tBreakpoint1\tBreakpoint2\tHLA_Type\tFusion_Peptide\tIC50\tRank\tEvent_Type\tStop_Codon\tConfidence\tGene1_TPM\tGene2_TPM\tAvg_TPM\tHLA_TPM\n")
+        out_file.write(
+            "Fusion\tGene1\tGene2\tBreakpoint1\tBreakpoint2\tSplit_Reads1\tSplit_Reads2\tDiscordant_Reads\tClosest_Breakpoint1\tClosest_Breakpoint2\tHLA_Type\tFusion_Peptide\tIC50\tRank\tEvent_Type\tStop_Codon\tConfidence\tGene1_TPM\tGene2_TPM\tAvg_TPM\tHLA_TPM\n"
+        )
         for j in range(0, len(fusion)):
-            out_file.write(fusion[j]+"\t"+gene1tpm[j].split("\t")[0]+"\t"+gene2tpm[j].split("\t")[0]+"\t"+bkpoint1[j]+"\t"+bkpoint2[j]+"\t"+hlaTpm[j].split("\t")[0]+"\t"+fpep[j]+"\t"+mIc[j]+"\t"+mRank[j]+"\t"+eveType[j]+"\t"+stopCod[j]+"\t"+arConf[j]+"\t"+gene1tpm[j].split("\t")[1]+"\t"+gene2tpm[j].split("\t")[1]+"\t"+tpmAvg[j]+"\t"+hlaTpm[j].split("\t")[1]+"\n")
-        out_file.close()
+            out_file.write(
+                fusion[j]
+                + "\t"
+                + gene1tpm[j].split("\t")[0]
+                + "\t"
+                + gene2tpm[j].split("\t")[0]
+                + "\t"
+                + bkpoint1[j]
+                + "\t"
+                + bkpoint2[j]
+                + "\t"
+                + split_read1[j]
+                + "\t"
+                + split_read2[j]
+                + "\t"
+                + disco_reads[j]
+                + "\t"
+                + closest_bkp1[j]
+                + "\t"
+                + closest_bkp2[j]
+                + "\t"
+                + hlaTpm[j].split("\t")[0]
+                + "\t"
+                + fpep[j]
+                + "\t"
+                + mIc[j]
+                + "\t"
+                + mRank[j]
+                + "\t"
+                + eveType[j]
+                + "\t"
+                + stopCod[j]
+                + "\t"
+                + arConf[j]
+                + "\t"
+                + gene1tpm[j].split("\t")[1]
+                + "\t"
+                + gene2tpm[j].split("\t")[1]
+                + "\t"
+                + tpmAvg[j]
+                + "\t"
+                + hlaTpm[j].split("\t")[1]
+                + "\n"
+            )
+    out_file.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(usage='final_out.py [-h] -t {/path/to/tmp/TPMinput/} -t {/path/to/tmp/filtered_input/} -o {/path/to/output/}')

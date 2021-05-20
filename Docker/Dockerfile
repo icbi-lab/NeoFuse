@@ -102,7 +102,16 @@ RUN python -m pip install --upgrade pip && \
 	python -m pip install 'tables' && \
 	python3 -m pip install 'keras==2.3' && \
 	python3 -m pip install 'setuptools==47.3.1' && \
-	python3 -m pip install 'Pandas'
+	python3 -m pip install 'Pandas' && \
+	python3 -m pip install 'six' && \
+	python3 -m pip install 'pandas>=0.20.3' && \
+	python3 -m pip install 'tensorflow>=2.2.0,<2.3.0' && \
+	python3 -m pip install 'appdirs' && \
+	python3 -m pip install 'scikit-learn' && \
+	python3 -m pip install 'mhcgnomes' && \
+	python3 -m pip install 'pyyaml' && \
+	python3 -m pip install 'tqdm' && \
+	python3 -m pip install 'np_utils'
 
 # Install python modules
 # RUN pip install 'NumPy==1.15.4' && \
@@ -134,27 +143,37 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 	apt-get install -y --no-install-recommends r-base ca-certificates libcurl4-openssl-dev libxml2-dev && \
 	Rscript -e 'install.packages("circlize", repos="http://cran.r-project.org"); source("https://bioconductor.org/biocLite.R"); biocLite(c("GenomicRanges", "GenomicAlignments"))'
 
-# Install arriba
-RUN wget -q -O - "https://github.com/suhrig/arriba/releases/download/v1.1.0/arriba_v1.1.0.tar.gz" | tar -xzf -
+# Install arriba 2.1.0 verion
+RUN mkdir -p /usr/local/bin/arriba_v2
+WORKDIR /usr/local/bin/arriba_v2
+RUN git clone https://github.com/suhrig/arriba.git
+WORKDIR /usr/local/bin/arriba_v2/arriba
+RUN git checkout develop \
+	&& make \
+	&& ln -s /usr/local/bin/arriba_v2/arriba/arriba /usr/local/bin/arriba
+WORKDIR /usr/local/bin/
 
-## make wrapper script for download_references.sh
-RUN echo '#!/bin/bash\n\
-cd /references\n\
-/arriba*/download_references.sh $1 $2 && \\\n\
-cp /arriba*/database/*${1%+*}* /references' > /usr/local/bin/download_references.sh && \
-	chmod a+x /usr/local/bin/download_references.sh
+# # Install arriba
+# RUN wget -q -O - "https://github.com/suhrig/arriba/releases/download/v1.1.0/arriba_v1.1.0.tar.gz" | tar -xzf -
 
-## make wrapper script for run_arriba.sh
-RUN echo '#!/bin/bash\n\
-cd /output\n\
-/arriba*/run_arriba.sh /references/STAR_index_* /references/*.gtf /references/*.fa /references/blacklist_*.tsv.gz /read1.fastq.gz /read2.fastq.gz ${1-8}' > /usr/local/bin/arriba.sh && \
-chmod a+x /usr/local/bin/arriba.sh && \
-	ln -s /usr/local/bin/arriba_v1.1.0/arriba /usr/local/bin/arriba
+# ## make wrapper script for download_references.sh
+# RUN echo '#!/bin/bash\n\
+# cd /references\n\
+# /arriba*/download_references.sh $1 $2 && \\\n\
+# cp /arriba*/database/*${1%+*}* /references' > /usr/local/bin/download_references.sh && \
+# 	chmod a+x /usr/local/bin/download_references.sh
 
-## make wrapper script for draw_fusions.R
-RUN echo '#!/bin/bash\n\
-Rscript /arriba*/draw_fusions.R --annotation=$(ls /references/*.gtf) --fusions=/fusions.tsv --output=/output/fusions.pdf --proteinDomains=$(ls /references/protein_domains_*.gff3) --alignments=/Aligned.sortedByCoord.out.bam --cytobands=$(ls /references/cytobands_*.tsv)' > /usr/local/bin/draw_fusions.sh && \
-	chmod a+x /usr/local/bin/draw_fusions.sh
+# ## make wrapper script for run_arriba.sh
+# RUN echo '#!/bin/bash\n\
+# cd /output\n\
+# /arriba*/run_arriba.sh /references/STAR_index_* /references/*.gtf /references/*.fa /references/blacklist_*.tsv.gz /read1.fastq.gz /read2.fastq.gz ${1-8}' > /usr/local/bin/arriba.sh && \
+# chmod a+x /usr/local/bin/arriba.sh && \
+# 	ln -s /usr/local/bin/arriba_v1.1.0/arriba /usr/local/bin/arriba
+
+# ## make wrapper script for draw_fusions.R
+# RUN echo '#!/bin/bash\n\
+# Rscript /arriba*/draw_fusions.R --annotation=$(ls /references/*.gtf) --fusions=/fusions.tsv --output=/output/fusions.pdf --proteinDomains=$(ls /references/protein_domains_*.gff3) --alignments=/Aligned.sortedByCoord.out.bam --cytobands=$(ls /references/cytobands_*.tsv)' > /usr/local/bin/draw_fusions.sh && \
+# 	chmod a+x /usr/local/bin/draw_fusions.sh
 
 # Install featureCounts
 ARG PACKAGE_VERSION=1.6.1
@@ -177,8 +196,8 @@ WORKDIR /usr/local/bin/source/
 RUN chmod +x NeoFuse_single.sh && \
 	chmod +x NeoFuse_multi.sh && \
 	chmod +x NeoFuse.sh && \
-	chmod +x NeoFuse_download.sh
-RUN ln -s /usr/local/bin/source/NeoFuse_single.sh /usr/local/bin/NeoFuse_single && \
+	chmod +x NeoFuse_download.sh && \
+	ln -s /usr/local/bin/source/NeoFuse_single.sh /usr/local/bin/NeoFuse_single && \
 	ln -s /usr/local/bin/source/NeoFuse_multi.sh /usr/local/bin/NeoFuse_multi && \
 	ln -s /usr/local/bin/source/NeoFuse.sh /usr/local/bin/NeoFuse && \
 	ln -s /usr/local/bin/source/NeoFuse_download.sh /usr/local/bin/NeoFuse-download
@@ -198,9 +217,11 @@ ENV MHCFLURRY_DEFAULT_CLASS1_MODELS /home/neofuse/.local/share/mhcflurry/4/2.0.0
 # ENV MHCFLURRY_DEFAULT_CLASS1_MODELS /home/neofuse/.local/share/mhcflurry/4/1.6.0
 # ENV MHCFLURRY_DOWNLOADS_DIR /home/neofuse/.local/share/mhcflurry/4/1.4.0
 
+# Add user to install MHCflurry models in "~/" dir
 RUN useradd -ms /bin/bash neofuse
 USER neofuse
 
-RUN mhcflurry-downloads fetch models_class1
+# Download MHCflurry class I pan models
+RUN mhcflurry-downloads fetch models_class1_pan
 
 WORKDIR /home/
