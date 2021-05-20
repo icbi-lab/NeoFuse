@@ -133,9 +133,9 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 
 **-f:** Comma separated list of arriba filters to disable (do not use space separeted lists, see arriba manual for more details)
 
-**-v:** Tab-separated file with coordinates of structural variants found using whole-genome sequencing data (The file may be gzip-compressed, for more info refer to arriba manual)
+**-v:** VCF or Tab-separated file with coordinates of structural variants found using whole-genome sequencing data (The file may be gzip-compressed, for more info refer to arriba manual)
 
-**-S:** Determines how far a genomic breakpoint may be away from a transcriptomic breakpoint to still consider it as a related event (used with -v parameter - Default = 100000).
+**-S:** Determines how far a genomic breakpoint may be away from a transcriptomic breakpoint to still consider it as a related event (used with -v parameter - Default = 100000)
 
 **--singularity:** NeoFuse will use the Singularity image
 
@@ -209,6 +209,10 @@ $ NeoFuse <arguments> [options] --singularity (or --docker)
 **-K:** File containing known/recurrent fusions (see arriba manual for more details)
 
 **-f:** Comma separated list of arriba filters to disable (do not use spaces, see arriba manual for more details)
+
+**-v:** VCF or Tab-separated file with coordinates of structural variants found using whole-genome sequencing data (The file may be gzip-compressed, for more info refer to arriba manual)
+
+**-S:** Determines how far a genomic breakpoint may be away from a transcriptomic breakpoint to still consider it as a related event (used with -v parameter - Default = 100000)
 
 **--singularity:** NeoFuse will use the Singularity image
 
