@@ -269,20 +269,18 @@ if test -f "$READ2"; then
 		# YARA + OptiType
 		## YARA
 		echo " YARA Run started" | sed "s/^/[`date +"%T"`] /"
+		rm -f $TEMPDIROPTI/R1 $TEMPDIROPTI/R2
+    	mkfifo $TEMPDIROPTI/R1 $TEMPDIROPTI/R2
 		yara_mapper --version-check 0 -e 3 -t $CORES -f bam $YARAIDX $READ1  $READ2 | \
-            samtools view -@ $CORES -h -F 4 -b1 -o $TEMPDIROPTI"/"$FILE"_mapped_1.bam"
-		# mkfifo R1 R2
-		# yara_mapper --version-check 0 -e 3 -t $CORES -f bam $YARAIDX $READ1  $READ2 | \
-		# samtools view -@ $CORES -h -F 4 -b1 | tee R1 R2 > /dev/null &
-		# samtools view -@ $CORES -h -f 0x40 -b1 R1 > $TEMPDIROPTI"/"$FILE"_mapped_1.bam" &
-		# samtools view -@ $CORES -h -f 0x80 -b1 R2 > $TEMPDIROPTI"/"$FILE"_mapped_2.bam" &
-		# wait
-		# rm -f R1 R2
+            samtools view -@ $CORES -h -F 4 -b1 | \
+			tee $TEMPDIROPTI/R1 $TEMPDIROPTI/R2 > /dev/null &
+            samtools view -@ 2 -h -f 0x40 -b1 $TEMPDIROPTI/R1 > $TEMPDIROPTI"/"$FILE"_mapped_1.bam" & 
+            samtools view -@ 2 -h -f 0x80 -b1 $TEMPDIROPTI/R2 > $TEMPDIROPTI"/"$FILE"_mapped_2.bam" & 
+    	wait
 		## Optitype
 		echo " OptiType Run started" | sed "s/^/[`date +"%T"`] /"
-		python $Optitype -i $TEMPDIROPTI"/"$FILE"_mapped_1.bam" \
+		python $Optitype -i $TEMPDIROPTI"/"$FILE"_mapped_1.bam" $TEMPDIROPTI"/"$FILE"_mapped_2.bam" \
 			--rna -v -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
-		# python $Optitype -i $TEMPDIROPTI$FILE"_mapped_1.bam" $TEMPDIROPTI$FILE"_mapped_2.bam" -e 1 -b 0.009 -v --rna -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
 		if [ `echo $?` != 0 ]; then
 			echo "An error occured during OptiType run, check $REALOUT/$FILE/LOGS/$FILE.optitype.log for more details"
 			exit 1
@@ -368,7 +366,7 @@ else
 	else
 		# YARA + OptiType
 		## YARA
-		echo " YARA Run started" | sed "s/^/[`date +"%T"`] /"
+		echo " YARA Run started" | sed "s/^/[`date +"%T"`] /" 
 		yara_mapper --version-check 0 -e 3 -t $CORES -f bam $YARAIDX $READ1 | \
             samtools view -@ $CORES -h -F 4 -b1 -o $TEMPDIROPTI"/"$FILE"_mapped_1.bam"
 		## Optitype
