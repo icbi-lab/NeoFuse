@@ -78,11 +78,6 @@ RUN cmake ../seqan -DSEQAN_BUILD_SYSTEM=APP:yara && \
 	ln -s /usr/local/bin/yara-build/bin/yara* /usr/local/bin/
 WORKDIR /usr/local/bin/
 
-# Install Razers3
-# RUN wget --no-check-certificate http://packages.seqan.de/razers3/razers3-3.5.8-Linux-x86_64.tar.xz && \
-# 	tar xf razers3-3.5.8-Linux-x86_64.tar.xz && rm -f razers3-3.5.8-Linux-x86_64.tar.xz && \
-# 	ln -s /usr/local/bin/razers3-3.5.8-Linux-x86_64/bin/razers3 /usr/local/bin/razers3
-
 # Install samtools
 ADD https://github.com/samtools/samtools/releases/download/${samtools_version}/samtools-${samtools_version}.tar.bz2 /usr/local/bin/
 
@@ -93,13 +88,15 @@ RUN tar -xjf /usr/local/bin/samtools-${samtools_version}.tar.bz2 -C /usr/local/b
 # Install required python modules
 RUN python -m pip install --upgrade pip && \
 	python3 -m pip install --upgrade pip && \
-	python -m pip install 'NumPy' && \
+	python -m pip install 'NumPy==1.16.6' && \
+	python -m pip install 'numexpr==2.7.0' && \
+	python -m pip install 'six==1.16.0' && \
+	python -m pip install 'tables==3.5.2' && \
 	python -m pip install 'Pyomo' && \
 	python -m pip install 'Pandas' && \
 	python -m pip install 'Pysam' && \
 	python -m pip install 'Matplotlib' && \
 	python -m pip install 'Future' && \
-	python -m pip install 'tables' && \
 	python3 -m pip install 'keras==2.3' && \
 	python3 -m pip install 'setuptools==47.3.1' && \
 	python3 -m pip install 'Pandas' && \
