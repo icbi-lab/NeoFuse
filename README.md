@@ -164,7 +164,7 @@ Sample2	/path/to/Sample2_read_1.fastq
 
 
 ```
-**Notes:** The first line of the TSV should start with an hashtag. There should always be **one** blank row at the end of the TSV file.
+**Notes:** The first line of the TSV should start with a hashtag. FASTQ files should be in the same directory. No whitespaces allowed.
 
 Once the TSV file is created, the samples can be analyzed with the following command:
 
@@ -284,7 +284,7 @@ File names may differ depending on the tools, peptide length, etc.
 ├── Sample1_9_MHCFlurry.log
 ├── Sample1.arriba.err
 ├── Sample1.arriba.log
-├── Sample1.cleave_peptides.log
+├── Sample1.cleave.log
 ├── Sample1.counts_to_tpm.log
 ├── Sample1.featureCounts.log
 ├── Sample1.final.log
@@ -292,8 +292,8 @@ File names may differ depending on the tools, peptide length, etc.
 ├── Sample1.Log.out
 ├── Sample1.Log.std.out
 ├── Sample1.optitype.log
-├── Sample1.razer1.log
-├── Sample1.razer2.log
+├── Sample1.samtools.err
+├── Sample1.samtools.log
 ├── Sample1.STAR.err
 ├── Sample1.STAR.log
 └── Sample1.association.log
@@ -303,6 +303,7 @@ HLA_Optitype.txt contains the HLA types predicted by OptiType
 
 ```
 /OptiType
+├── Sample1_coverage_plot.pdf
 └── Sample1_HLA_Optitype.txt
 ```
 

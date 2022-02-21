@@ -55,8 +55,12 @@ if [ ! -d "~/.local/share/mhcflurry/4/2.0.0/models_class1/" ]; then
 	mhcflurry-downloads fetch &> /dev/null
 fi
 
-# Check input TSV file
-echo > $OUTDIR"/in.tsv"
+# Create temp input TSV, replace paths with mountpoints + sanity check
+cat $IN > $OUTDIR"/in.tsv"
+MPOINT=$(awk '{if(NR==2){ print $2; }}' < "$IN")
+MPOINT=$(dirname "${MPOINT}")
+sed -i "s%$MPOINT%/mnt/data%g" $OUTDIR"/in.tsv"
+
 while read -r line
 do
 	if [[ $line =~ \# ]]; then
@@ -67,9 +71,12 @@ do
 		echo "Exiting ..."
 		exit 1
 	else
-		echo $line >> $OUTDIR"/in.tsv"
+		:
 	fi
 done < $IN
+
+# Add trailing blank line - in case user has not included one
+echo >> $OUTDIR"/in.tsv"
 
 # process args
 if [ "$FUSIONFILE" != "false" ]
@@ -153,7 +160,9 @@ if [ $CORES -le 3 ]; then
 	STARTHREADS=1
 	ARRIBATHREADS=1
 	RAZERTHREADS=1
+	SAMTOOLSTHREADS=1
 else
+	SAMTOOLSTHREADS=2
 	if [ $(($CORES % 2)) -eq 0 ]; then
 		STARTHREADS=$(($CORES / 2))
 		ARRIBATHREADS=$(($CORES / 2))
@@ -180,12 +189,16 @@ else
 fi
 
 # Read the TSV file, skip 1st line, get vars
-## Process each pair of reads
 sed 1d $OUTDIR"/in.tsv" | while read -r id read1 read2
 do
-	FILE=$id
-	READ1=$read1
-	READ2=$read2
+	# Check for extra trailing empty lines
+	if [ "$id" == "" ] && [ "$read1" == "" ]; then
+		break
+	else
+		FILE=$id
+		READ1=$read1
+		READ2=$read2
+	fi
 	# Check for user defined ID, if not get ID from file names
 	if test $FILE; then
 		:
@@ -208,7 +221,7 @@ do
 	OUTDIRCOUNTS=$OUTDIR"/"$FILE"/FeatureCounts/"
 	OUTDIRTPM=$OUTDIR"/"$FILE"/TPM/"
 	OUTDIRRPKM=$OUTDIR"/"$FILE"/RPKM/"
-	TEMPDIROPTI=$OUTDIR"/"$FILE"/OptiType/tmp/"
+	TEMPDIROPTI=$OUTDIR"/"$FILE"/OptiType/tmp"
 	OUTDIROPTI=$OUTDIR"/"$FILE"/OptiType/"
 	OUTDIRCLEAVEPEP=$OUTDIR"/"$FILE"/Peptides/"
 	FINALOUTDIR=$OUTDIR"/"$FILE"/NeoFuse/"
@@ -246,7 +259,6 @@ do
 		--outSAMtype BAM Unsorted 2>$LOGSDIR$FILE.STAR.err |
 			samtools sort -@ $SAMTOOLSTHREADS -O BAM -o ${OUTDIRALIGN}${FILE}.Aligned.sortedByCoord.out.bam /dev/stdin \
 			> $LOGSDIR$FILE.samtools.log 2>$LOGSDIR$FILE.samtools.err &
-		
 
 		# Arriba
 		echo " Arriba Run started" | sed "s/^/[`date +"%T"`] /"
@@ -262,7 +274,7 @@ do
 		arriba \
 		-x /dev/stdin \
 		-o $OUTDIRARRIBA$FILE.fusions.tsv -O $OUTDIRARRIBA$FILE.fusions.discarded.tsv \
-		-a $GENOMEDIR -g $ANNOTATION -b $BLACKLIST $FUSIONFILEOPT $FUSIONFILEOPT $VARF $GENB > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
+		-a $GENOMEDIR -g $ANNOTATION -b $BLACKLIST $VARF $GENB $FUSIONFILEOPT $ARRFILT > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
 		if [ `echo $?` != 0 ]; then
 			echo "An error occured during STAR/Arriba run, check the log files in $REALOUT/$FILE/LOGS/ for more details"
 			exit 1
@@ -286,18 +298,17 @@ do
 			# YARA + OptiType
 			## YARA
 			echo " YARA Run started" | sed "s/^/[`date +"%T"`] /"
+			rm -f $TEMPDIROPTI/R1 $TEMPDIROPTI/R2
+    		mkfifo $TEMPDIROPTI/R1 $TEMPDIROPTI/R2
 			yara_mapper --version-check 0 -e 3 -t $CORES -f bam $YARAIDX $READ1  $READ2 | \
-    	        samtools view -@ $CORES -h -F 4 -b1 -o $TEMPDIROPTI"/"$FILE"_mapped_1.bam"
-			# mkfifo R1 R2
-			# yara_mapper --version-check 0 -e 3 -t $CORES -f bam $YARAIDX $READ1  $READ2 | \
-			# samtools view -@ $CORES -h -F 4 -b1 | tee R1 R2 > /dev/null &
-			# samtools view -@ $CORES -h -f 0x40 -b1 R1 > $TEMPDIROPTI"/"$FILE"_mapped_1.bam" &
-			# samtools view -@ $CORES -h -f 0x80 -b1 R2 > $TEMPDIROPTI"/"$FILE"_mapped_2.bam" &
-			# wait
-			# rm -f R1 R2
+            	samtools view -@ $CORES -h -F 4 -b1 | \
+				tee $TEMPDIROPTI/R1 $TEMPDIROPTI/R2 > /dev/null &
+            	samtools view -@ 2 -h -f 0x40 -b1 $TEMPDIROPTI/R1 > $TEMPDIROPTI"/"$FILE"_mapped_1.bam" & 
+            	samtools view -@ 2 -h -f 0x80 -b1 $TEMPDIROPTI/R2 > $TEMPDIROPTI"/"$FILE"_mapped_2.bam" &
+			wait
 			## Optitype
 			echo " OptiType Run started" | sed "s/^/[`date +"%T"`] /"
-			python $Optitype -i $TEMPDIROPTI"/"$FILE"_mapped_1.bam" \
+			python $Optitype -i $TEMPDIROPTI"/"$FILE"_mapped_1.bam" $TEMPDIROPTI"/"$FILE"_mapped_2.bam" \
 				--rna -v -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
 			# python $Optitype -i $TEMPDIROPTI$FILE"_mapped_1.bam" $TEMPDIROPTI$FILE"_mapped_2.bam" -e 1 -b 0.009 -v --rna -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
 			if [ `echo $?` != 0 ]; then
@@ -362,7 +373,7 @@ do
 		arriba \
 		-x /dev/stdin \
 		-o $OUTDIRARRIBA$FILE.fusions.tsv -O $OUTDIRARRIBA$FILE.fusions.discarded.tsv \
-		-a $GENOMEDIR -g $ANNOTATION -b $BLACKLIST $FUSIONFILEOPT $FUSIONFILEOPT $VARF $GENB > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
+		-a $GENOMEDIR -g $ANNOTATION -b $BLACKLIST $VARF $GENB $FUSIONFILEOPT $ARRFILT > $LOGSDIR$FILE.arriba.log 2>$LOGSDIR$FILE.arriba.err
 		if [ `echo $?` != 0 ]; then
 			echo "An error occured during STAR/Arriba run, check the log files in $REALOUT/$FILE/LOGS/ for more details"
 			exit 1
@@ -389,7 +400,7 @@ do
 			yara_mapper --version-check 0 -e 3 -t $CORES -f bam $YARAIDX $READ1 | \
     	        samtools view -@ $CORES -h -F 4 -b1 -o $TEMPDIROPTI"/"$FILE"_mapped_1.bam"
 			## Optitype
-			echo " OptiType Run started at:" `date +"%T"` | sed "s/^/[`date +"%T"`] /"
+			echo " OptiType Run started" | sed "s/^/[`date +"%T"`] /"
 			python $Optitype -i $TEMPDIROPTI"/"$FILE"_mapped_1.bam" \
 				--rna -v -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
 			# python $Optitype -i $TEMPDIROPTI$FILE"_mapped_1.bam" $TEMPDIROPTI$FILE"_mapped_2.bam" -e 1 -b 0.009 -v --rna -o $TEMPDIROPTI > $LOGSDIR$FILE.optitype.log 2>&1
@@ -437,7 +448,7 @@ do
 		:
 	fi
 	# Cleave peptides
-	echo " Searching for peptides of length $PEPLEN:" `date +"%T"` | sed "s/^/[`date +"%T"`] /"
+	echo " Searching for peptides of length $PEPLEN" | sed "s/^/[`date +"%T"`] /"
 	python3 /usr/local/bin/source/cleave_peptides.py -i $OUTDIRARRIBA$FILE.fusions.tsv -o $OUTDIRCLEAVEPEP$FILE -p $PEPLEN > $LOGSDIR$FILE.cleave.log 2>&1
 	if [ `echo $?` != 0 ]; then
 		echo "An error occured while searching for peptides, check $REALOUT/$FILE/LOGS/$FILE.cleave_peptides.log for more details"
@@ -578,10 +589,9 @@ do
 	rm -rf $OUTDIRCLEAVEPEP
 	rm -rf $FINALTMP
 	echo " The run has succesfully finished" | sed "s/^/[`date +"%T"`] /"
-	echo " All the results and log files can be found in $OUTDIR/$FILE/" | sed "s/^/[`date +"%T"`] /"
+	echo " All the results and log files can be found in $REALOUT/$FILE/" | sed "s/^/[`date +"%T"`] /"
 	echo "[-------------------------------- [NeoFuse] --------------------------------]"
 	echo
 done
 
 rm $OUTDIR"/in.tsv"
-rm $IN

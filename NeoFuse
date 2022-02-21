@@ -70,7 +70,7 @@ do
 done
 if [ "$BUILD" == "false" ]; then
 	if [ "$READ1" == "" ] && [ "$IN" == "" ] && [ "$BUILDREF" == "false" ] || [ "$HELP" == "true" ]; then
-		echo "NeoFuse v1.2.0
+		echo "NeoFuse v1.2.1
 	Usage: NeoFuse <arguments> [options]
 
 	<Arguments>
@@ -277,11 +277,8 @@ if [ "$BUILD" == "false" ]; then
 		# If user calls for Docker/singularity:
 		## Change realpaths to mount points
 		if [ "$IN" != "" ]; then
-			cat $IN > $(echo $IN | sed s/.tsv//)_temp.tsv
-			IN=$(echo $IN | sed s/.tsv//)_temp.tsv
 			INDIR=$(awk '{if(NR==2){ print $2; }}' < "$IN")
 			INDIR=$(dirname "${INDIR}")
-			sed -i "s%$INDIR%/mnt/data%g" $IN
 			INDIR=`realpath2 $INDIR`
 			if [ "$CUSTOMLIST" != "false" ]; then
 				SMOUNT="-B $INDIR:/mnt/data,$IN:/mnt/$(echo ${IN##*/}),$OUTDIR:/mnt/out/$(echo ${OUTDIR##*/}),$STARINDEX:/mnt/genome/$(echo ${STARINDEX##*/}),$GENOMEDIR:/mnt/genome/$(echo ${GENOMEDIR##*/}),$ANNOTATION:/mnt/genome/$(echo ${ANNOTATION##*/}),$CUSTOMLIST:/mnt/$(echo ${CUSTOMLIST##*/})$MOUNTPOINT"
