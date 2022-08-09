@@ -239,6 +239,10 @@ do
 	mkdir -p $FINALTMP
 	mkdir -p $LOGSDIR
 
+	# Create temp dir and export
+	mkdir -p $OUTDIR"/TEMPDIR/"
+	export TMPDIR=$OUTDIR"/TEMPDIR/"
+
 	# Check for PE or SE reads and process the files accordingly
 	if test -f "$READ2"; then
 		echo "[-------------------------------- [NeoFuse] --------------------------------]"
@@ -588,6 +592,7 @@ do
 	rm -rf $OUTDIRRPKM
 	rm -rf $OUTDIRCLEAVEPEP
 	rm -rf $FINALTMP
+	rm -rf $OUTDIR"/TEMPDIR/"
 	echo " The run has succesfully finished" | sed "s/^/[`date +"%T"`] /"
 	echo " All the results and log files can be found in $REALOUT/$FILE/" | sed "s/^/[`date +"%T"`] /"
 	echo "[-------------------------------- [NeoFuse] --------------------------------]"

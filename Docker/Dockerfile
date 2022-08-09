@@ -208,7 +208,7 @@ RUN apt-get autoclean -y && apt-get clean -y && \
 WORKDIR /usr/local/bin/
 
 # Install MHCFlurry
-RUN pip install mhcflurry
+RUN pip install mhcflurry==2.0.4
 
 ENV MHCFLURRY_DEFAULT_CLASS1_MODELS /home/neofuse/.local/share/mhcflurry/4/2.0.0
 # ENV MHCFLURRY_DEFAULT_CLASS1_MODELS /home/neofuse/.local/share/mhcflurry/4/1.6.0

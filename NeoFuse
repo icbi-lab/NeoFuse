@@ -70,7 +70,7 @@ do
 done
 if [ "$BUILD" == "false" ]; then
 	if [ "$READ1" == "" ] && [ "$IN" == "" ] && [ "$BUILDREF" == "false" ] || [ "$HELP" == "true" ]; then
-		echo "NeoFuse v1.2.1
+		echo "NeoFuse v1.2.2a
 	Usage: NeoFuse <arguments> [options]
 
 	<Arguments>
